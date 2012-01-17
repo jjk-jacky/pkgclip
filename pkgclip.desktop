@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PkgClip
+Comment=Remove old packages from pacman's cache
+GenericName=Cached Packages Trimmer Utility
+Exec=pkgclip
+Icon=pkgclip
+Categories=System;
+Encoding=UTF-8
+
