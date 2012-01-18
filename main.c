@@ -865,6 +865,9 @@ dbus_method_cb (GObject *source _UNUSED_, GAsyncResult *result, pkgclip_t *pkgcl
         return;
     }
     
+    /* to update reasons w/ new list of packages */
+    refresh_list (FALSE, pkgclip);
+    
     guint processed;
     g_variant_get (ret, "(i)", &processed);
     show_results (processed, pkgclip);
