@@ -33,7 +33,7 @@
 #include <alpm.h>
 #include <alpm_list.h>
 
-#define PKGCLIP_VERSION         "0.1.1"
+#define PKGCLIP_VERSION         "0.1.2"
 #define PKGCLIP_TAGLINE         "Cached Packages Trimmer Utility"
 
 #define PACMAN_CONF             "/etc"
@@ -61,6 +61,7 @@ typedef enum {
 } recomm_t;
 
 typedef enum {
+    REASON_AS_INSTALLED,
     REASON_NEWER_THAN_INSTALLED,
     REASON_INSTALLED,
     REASON_OLDER_VERSION,
@@ -96,13 +97,16 @@ typedef struct _progress_win_t {
 } progress_win_t;
 
 typedef struct _prefs_win_t {
-    GtkWidget *window;
-    GtkWidget *filechooser;
-    GtkWidget *combo;
-    GtkWidget *entry;
-    GtkWidget *chk_old_pkgrel;
-    GtkWidget *chk_sane_sort_indicator;
-    GtkWidget *chk_autoload;
+    GtkWidget    *window;
+    GtkWidget    *filechooser;
+    GtkWidget    *combo;
+    GtkWidget    *entry;
+    GtkWidget    *chk_old_pkgrel;
+    GtkWidget    *chk_sane_sort_indicator;
+    GtkWidget    *chk_autoload;
+    GtkTreeView  *tree_ai;
+    GtkTreeModel *model_ai;
+    gboolean      ai_updated;
 } prefs_win_t;
 
 typedef struct _pkgclip_t {
@@ -116,6 +120,7 @@ typedef struct _pkgclip_t {
     gboolean         old_pkgrel;
     recomm_t         recomm[NB_REASONS];
     int              nb_old_ver;
+    alpm_list_t     *as_installed;
     
     /* app/gui */
     gboolean         in_gtk_main;

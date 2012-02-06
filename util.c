@@ -320,6 +320,10 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
                     free (s);
                 }
             }
+            else if (strcmp (key, "AsInstalled") == 0)
+            {
+                setrepeatingoption (value, &(pkgclip->as_installed));
+            }
             else if (strncmp (key, "RecommFor", 9) == 0) /* 9 == strlen("RecommFor") */
             {
                 char *s;
@@ -547,6 +551,7 @@ new_pkgclip (void)
     pkgclip->recomm[REASON_ALREADY_OLDER_VERSION]   = RECOMM_REMOVE;
     pkgclip->recomm[REASON_OLDER_PKGREL]            = RECOMM_REMOVE;
     pkgclip->recomm[REASON_PKG_NOT_INSTALLED]       = RECOMM_REMOVE;
+    pkgclip->recomm[REASON_AS_INSTALLED] = pkgclip->recomm[REASON_INSTALLED];
     pkgclip->nb_old_ver = 1;
     
     /* parse config file, if any */
@@ -564,8 +569,10 @@ gboolean
 save_config (pkgclip_t *pkgclip)
 {
     FILE *fp;
-    char buf[1024];
+    char buf[1024], *s;
+    int len = 1024, nb;
     char file[PATH_MAX];
+    alpm_list_t *i;
     
     snprintf (file, PATH_MAX, "%s/.config/pkgclip.conf", g_get_home_dir ());
     fp = fopen (file, "w");
@@ -613,6 +620,34 @@ save_config (pkgclip_t *pkgclip)
     {
         snprintf (buf, 1024, "NbOldVersion = %d\n", pkgclip->nb_old_ver);
         if (EOF == fputs (buf, fp))
+        {
+            goto err_save;
+        }
+    }
+    
+    buf[0] = '\0';
+    s = buf;
+    for (i = pkgclip->as_installed; i; i = alpm_list_next (i))
+    {
+        nb = snprintf (s, (size_t) len, " %s", (char *) i->data);
+        len -= nb;
+        s += nb;
+    }
+    if (len < 0)
+    {
+        goto err_save;
+    }
+    if (len < 1024)
+    {
+        if (EOF == fputs ("AsInstalled =", fp))
+        {
+            goto err_save;
+        }
+        if (EOF == fputs (buf, fp))
+        {
+            goto err_save;
+        }
+        if (EOF == fputs ("\n", fp))
         {
             goto err_save;
         }

@@ -50,6 +50,7 @@ static const char *recomm_label[] = {
 };
 
 static const char *reason_label[] = {
+    "Treated as if it was installed",
     "More recent than installed version",
     "Installed on system",
     "Recent older version (%d/%d)",
@@ -334,6 +335,14 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
                 /* newer than installed */
                 pc_pkg->reason = REASON_NEWER_THAN_INSTALLED;
             }
+        }
+        else if (NULL != alpm_list_find_str (pkgclip->as_installed, pc_pkg->name))
+        {
+            /* treat as if installed */
+            pc_pkg->reason = REASON_AS_INSTALLED;
+            is_installed = TRUE;
+            inst_ver = pc_pkg->version;
+            pkgrel = strrchr(inst_ver, '-');
         }
         else
         {
@@ -1105,6 +1114,81 @@ menu_restore_recomm_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     change_marked (SELECT_RESTORE, 0, pkgclip);
 }
 
+static void
+change_as_installed_selection_foreach (GtkTreeModel *model,
+                                 GtkTreePath *path _UNUSED_,
+                                 GtkTreeIter *iter,
+                                 void *ptr[3])
+{
+    gboolean adding = (gboolean) ptr[0];
+    gboolean *changed = (gboolean *) ptr[1];
+    pkgclip_t *pkgclip = (pkgclip_t *) ptr[2];
+    pc_pkg_t *pc_pkg;
+    alpm_list_t *i, *item = NULL;
+    
+    gtk_tree_model_get (model, iter, COL_PC_PKG, &pc_pkg, -1);
+    /* search for the item in list. we do this "manually" because we need to
+     * have the item, and alpm_find_* functions return the given data... */
+    for (i = pkgclip->as_installed; i; i = alpm_list_next (i))
+    {
+        if (strcmp (i->data, pc_pkg->name) == 0)
+        {
+            item = i;
+            break;
+        }
+    }
+    if (item == NULL)
+    {
+        if (adding)
+        {
+            pkgclip->as_installed = alpm_list_add (pkgclip->as_installed,
+                strdup (pc_pkg->name));
+            *changed = TRUE;
+        }
+    }
+    else if (!adding)
+    {
+        pkgclip->as_installed = alpm_list_remove_item (pkgclip->as_installed,
+            item);
+        free (item->data);
+        free (item);
+        *changed = TRUE;
+    }
+
+}
+
+static void
+change_as_installed (gboolean adding, pkgclip_t *pkgclip)
+{
+    gboolean changed = FALSE;
+    void *ptr[3] = {(void *) adding, (void *) &changed, (void *) pkgclip};
+    
+    gtk_tree_selection_selected_foreach (gtk_tree_view_get_selection (
+        GTK_TREE_VIEW (pkgclip->list)),
+        (GtkTreeSelectionForeachFunc) change_as_installed_selection_foreach,
+        (gpointer) ptr);
+    if (changed)
+    {
+        refresh_list (FALSE, pkgclip);
+        if (save_config (pkgclip))
+        {
+            gtk_label_set_text (GTK_LABEL (pkgclip->label), "Preferences saved.");
+        }
+    }
+}
+
+static void
+menu_add_as_installed_selection_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
+{
+    change_as_installed (TRUE, pkgclip);
+}
+
+static void
+menu_remove_as_installed_selection_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
+{
+    change_as_installed (FALSE, pkgclip);
+}
+
 static GtkLabel *pkgclip_label;
 
 static void
@@ -1134,7 +1218,7 @@ btn_leave_cb (GtkWidget *widget _UNUSED_, GdkEvent *event _UNUSED_, pkgclip_t *p
 }
 
 static void
-btn_prefs_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
+prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
 {
     gboolean needs_reload  = FALSE;
     gboolean needs_refresh = FALSE;
@@ -1145,6 +1229,7 @@ btn_prefs_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
     char *s;
     int btn_id, i;
     gboolean is_on;
+    GtkTreeIter iter;
     
     btn_id = (gint) g_object_get_data (G_OBJECT (button), "btn-id");
     
@@ -1209,6 +1294,24 @@ btn_prefs_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
             pkgclip->autoload = is_on;
             needs_save = TRUE;
         }
+        
+        if (pkgclip->prefs->ai_updated)
+        {
+            FREELIST (pkgclip->as_installed);
+            if (gtk_tree_model_get_iter_first (pkgclip->prefs->model_ai, &iter))
+            {
+                while (1)
+                {
+                    gtk_tree_model_get (pkgclip->prefs->model_ai, &iter, 0, &s, -1);
+                    pkgclip->as_installed = alpm_list_add (pkgclip->as_installed, strdup (s));
+                    if (!gtk_tree_model_iter_next (pkgclip->prefs->model_ai, &iter))
+                    {
+                        break;
+                    }
+                }
+            }
+            needs_save = TRUE;
+        }
     }
     /* Clear */
     else
@@ -1218,6 +1321,8 @@ btn_prefs_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
         pkgclip->nb_old_ver = 1;
         pkgclip->old_pkgrel = TRUE;
         pkgclip->autoload = TRUE;
+        
+        FREELIST (pkgclip->as_installed);
 
         pkgclip->recomm[REASON_NEWER_THAN_INSTALLED]    = RECOMM_KEEP;
         pkgclip->recomm[REASON_INSTALLED]               = RECOMM_KEEP;
@@ -1225,6 +1330,8 @@ btn_prefs_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
         pkgclip->recomm[REASON_ALREADY_OLDER_VERSION]   = RECOMM_REMOVE;
         pkgclip->recomm[REASON_OLDER_PKGREL]            = RECOMM_REMOVE;
         pkgclip->recomm[REASON_PKG_NOT_INSTALLED]       = RECOMM_REMOVE;
+        
+        pkgclip->recomm[REASON_AS_INSTALLED] = pkgclip->recomm[REASON_INSTALLED];
         
         needs_reload = TRUE;
     }
@@ -1343,6 +1450,98 @@ prefs_destroy_cb (GtkWidget *window _UNUSED_, pkgclip_t *pkgclip)
 }
 
 static void
+prefs_column_clicked_cb (GtkTreeViewColumn *column, GtkToggleButton *button)
+{
+    if (gtk_toggle_button_get_active (button))
+    {
+        /* reverse the sort indicator, because when DESCending we should point to
+         * the bottom, not the top; and vice versa */
+        gtk_tree_view_column_set_sort_order (column,
+            !gtk_tree_view_column_get_sort_order (column));
+    }
+}
+
+static void
+prefs_sane_toggled_cb (GtkToggleButton *button _UNUSED_, GtkTreeViewColumn *column)
+{
+    /* reverse the sort indicator, because when DESCending we should point to
+     * the bottom, not the top; and vice versa */
+    gtk_tree_view_column_set_sort_order (column,
+        !gtk_tree_view_column_get_sort_order (column));
+}
+
+static void
+prefs_btn_list_add_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+{
+    GtkTreeView *tree = pkgclip->prefs->tree_ai;
+    GtkTreeModel *model = gtk_tree_view_get_model (tree);
+    GtkTreeIter iter;
+    GtkTreePath *path;
+    GtkTreeViewColumn *column;
+    
+    gtk_list_store_append (GTK_LIST_STORE (model), &iter);
+    path = gtk_tree_model_get_path (model, &iter);
+    column = gtk_tree_view_get_column (tree, 0);
+    gtk_tree_view_set_cursor (tree, path, column, TRUE);
+    pkgclip->prefs->ai_updated = TRUE;
+}
+
+static void
+prefs_btn_list_edit_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+{
+    GtkTreeView *tree = pkgclip->prefs->tree_ai;
+    GtkTreeSelection *selection;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    GtkTreePath *path;
+    GtkTreeViewColumn *column;
+    
+    selection = gtk_tree_view_get_selection (tree);
+    if (!gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+        return;
+    }
+    path = gtk_tree_model_get_path (model, &iter);
+    column = gtk_tree_view_get_column (tree, 0);
+    gtk_tree_view_set_cursor (tree, path, column, TRUE);
+    pkgclip->prefs->ai_updated = TRUE;
+}
+
+static void
+prefs_btn_list_remove_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+{
+    GtkTreeView *tree = pkgclip->prefs->tree_ai;
+    GtkTreeSelection *selection;
+    GtkTreeModel *model;
+    GtkTreeIter iter;
+    
+    selection = gtk_tree_view_get_selection (tree);
+    if (!gtk_tree_selection_get_selected (selection, &model, &iter))
+    {
+        return;
+    }
+    gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
+    pkgclip->prefs->ai_updated = TRUE;
+}
+
+static void
+prefs_renderer_edited_cb (GtkCellRendererText *renderer _UNUSED_, gchar *path,
+                          gchar *text, pkgclip_t *pkgclip)
+{
+    GtkTreeModel *model = pkgclip->prefs->model_ai;
+    GtkTreeIter iter;
+    
+    if (gtk_tree_model_get_iter_from_string (model, &iter, path))
+    {
+        char *s;
+        gtk_tree_model_get (model, &iter, 0, &s, -1);
+        free (s);
+        gtk_list_store_set (GTK_LIST_STORE (model), &iter, 0, text, -1);
+        pkgclip->prefs->ai_updated = TRUE;
+    }
+}
+
+static void
 menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
 {
     if (NULL != pkgclip->prefs)
@@ -1456,24 +1655,121 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), !pkgclip->autoload);
     gtk_widget_show (check);
     
-    /* ** buttons ** */
+    /* ** As Installed ** */
+    GtkWidget *hbox;
+    hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 15);
+    gtk_widget_show (hbox);
+    
+    /* liststore for as_installed list */
+    GtkListStore *store;
+    store = gtk_list_store_new (1, G_TYPE_STRING);
+    pkgclip->prefs->model_ai = GTK_TREE_MODEL (store);
+    
+    /* said list */
+    GtkWidget *list;
+    list = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
+    pkgclip->prefs->tree_ai = GTK_TREE_VIEW (list);
+    
+    /* vbox - sort of a toolbar but vertical */
+    GtkWidget *vbox_tb;
     GtkWidget *button;
+    GtkWidget *image;
+    vbox_tb = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_pack_start (GTK_BOX (hbox), vbox_tb, FALSE, FALSE, 0);
+    gtk_widget_show (vbox_tb);
+    
+    /* button Add */
+    image = gtk_image_new_from_stock (GTK_STOCK_ADD, GTK_ICON_SIZE_MENU);
+    button = gtk_button_new ();
+    gtk_button_set_image (GTK_BUTTON (button), image);
+    gtk_widget_set_tooltip_text (button, "Add a new package to the list");
+    gtk_box_pack_start (GTK_BOX (vbox_tb), button, FALSE, FALSE, 0);
+    g_signal_connect (G_OBJECT (button), "clicked",
+                      G_CALLBACK (prefs_btn_list_add_cb), (gpointer) pkgclip);
+    gtk_widget_show (button);
+    /* button Edit */
+    image = gtk_image_new_from_stock (GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU);
+    button = gtk_button_new ();
+    gtk_button_set_image (GTK_BUTTON (button), image);
+    gtk_widget_set_tooltip_text (button, "Edit selected package");
+    gtk_box_pack_start (GTK_BOX (vbox_tb), button, FALSE, FALSE, 0);
+    g_signal_connect (G_OBJECT (button), "clicked",
+                      G_CALLBACK (prefs_btn_list_edit_cb), (gpointer) pkgclip);
+    gtk_widget_show (button);
+    /* button Remove */
+    image = gtk_image_new_from_stock (GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU);
+    button = gtk_button_new ();
+    gtk_button_set_image (GTK_BUTTON (button), image);
+    gtk_widget_set_tooltip_text (button, "Remove selected package from the list");
+    gtk_box_pack_start (GTK_BOX (vbox_tb), button, FALSE, FALSE, 0);
+    g_signal_connect (G_OBJECT (button), "clicked",
+                      G_CALLBACK (prefs_btn_list_remove_cb), (gpointer) pkgclip);
+    gtk_widget_show (button);
+    
+    /* a scrolledwindow for the list */
+    GtkWidget *scrolled;
+    scrolled = gtk_scrolled_window_new (
+        gtk_tree_view_get_hadjustment (GTK_TREE_VIEW (list)),
+        gtk_tree_view_get_vadjustment (GTK_TREE_VIEW (list)));
+    gtk_box_pack_start (GTK_BOX (hbox), scrolled, TRUE, TRUE, 0);
+    gtk_widget_show (scrolled);
+    
+    /* cell renderer & column(s) */
+    GtkCellRenderer *renderer;
+    GtkTreeViewColumn *column;
+    /* column: Package */
+    renderer = gtk_cell_renderer_text_new ();
+    g_object_set (G_OBJECT (renderer), "editable", TRUE, NULL);
+    g_signal_connect (G_OBJECT (renderer), "edited",
+                      G_CALLBACK (prefs_renderer_edited_cb), (gpointer) pkgclip);
+    column = gtk_tree_view_column_new_with_attributes ("Packages to treat As Installed:",
+                                                       renderer,
+                                                       "text", 0,
+                                                       NULL);
+    gtk_tree_view_column_set_sort_column_id (column, 0);
+    g_signal_connect (G_OBJECT (column), "clicked",
+                      G_CALLBACK (prefs_column_clicked_cb),
+                        (gpointer) pkgclip->prefs->chk_sane_sort_indicator);
+    gtk_tree_view_append_column (GTK_TREE_VIEW (list), column);
+    
+    /* eo.columns  */
+    
+    /* attach a callback for the sane sort order toggle button now, so we can
+     * have a pointer to column as user data */
+    g_signal_connect (G_OBJECT (pkgclip->prefs->chk_sane_sort_indicator), "toggled",
+                      G_CALLBACK (prefs_sane_toggled_cb), (gpointer) column);
+    
+    /* fill data */
+    GtkTreeIter iter;
+    alpm_list_t *j;
+    for (j = pkgclip->as_installed; j; j = alpm_list_next (j))
+    {
+        gtk_list_store_append (store, &iter);
+        gtk_list_store_set (store, &iter,
+            0,  j->data,
+            -1);
+    }
+    
+    gtk_container_add (GTK_CONTAINER (scrolled), list);
+    gtk_widget_show (list);
+    
+    
+    /* ** buttons ** */
     
     /* hbox */
-    GtkWidget *hbox;
     hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
     gtk_widget_show (hbox);
     
     /* button Clean */
-    GtkWidget *image;
     image = gtk_image_new_from_stock (GTK_STOCK_CLEAR, GTK_ICON_SIZE_MENU);
     button = gtk_button_new_with_label ("Clear Saved Preferences");
     gtk_button_set_image (GTK_BUTTON (button), image);
     gtk_widget_set_tooltip_text (button, "Remove PkgClip's configuration file");
     g_object_set_data (G_OBJECT (button), "btn-id", (gpointer) 0);
     g_signal_connect (G_OBJECT (button), "clicked",
-                     G_CALLBACK (btn_prefs_ok_cb), (gpointer) pkgclip);
+                      G_CALLBACK (prefs_btn_ok_cb), (gpointer) pkgclip);
     gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 4);
     gtk_widget_show (button);
     
@@ -1481,7 +1777,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     button = gtk_button_new_from_stock (GTK_STOCK_OK);
     g_object_set_data (G_OBJECT (button), "btn-id", (gpointer) 1);
     g_signal_connect (G_OBJECT (button), "clicked",
-                     G_CALLBACK (btn_prefs_ok_cb), (gpointer) pkgclip);
+                      G_CALLBACK (prefs_btn_ok_cb), (gpointer) pkgclip);
     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 4);
     gtk_widget_show (button);
     
@@ -1767,6 +2063,30 @@ main (int argc, char *argv[])
         G_CALLBACK (menu_unmark_selection_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
         G_CALLBACK (menu_select_cb), (gpointer) "Unmark all selected packages");
+    g_signal_connect (G_OBJECT (menuitem), "deselect",
+        G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* --- */
+    menuitem = gtk_separator_menu_item_new ();
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* add selection to list */
+    menuitem = gtk_image_menu_item_new_with_label ("Add Selection to As Installed list");
+    g_signal_connect (G_OBJECT (menuitem), "activate",
+        G_CALLBACK (menu_add_as_installed_selection_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (menuitem), "select",
+        G_CALLBACK (menu_select_cb), (gpointer) "Adds all selected packages to list of packages to treat as if they were installed");
+    g_signal_connect (G_OBJECT (menuitem), "deselect",
+        G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* remove selection from list */
+    menuitem = gtk_image_menu_item_new_with_label ("Remove Selection to As Installed list");
+    g_signal_connect (G_OBJECT (menuitem), "activate",
+        G_CALLBACK (menu_remove_as_installed_selection_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (menuitem), "select",
+        G_CALLBACK (menu_select_cb), (gpointer) "Removes all selected packages from list of packages to treat as if they were installed");
     g_signal_connect (G_OBJECT (menuitem), "deselect",
         G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
