@@ -52,6 +52,7 @@ typedef enum {
     COL_RECOMM,
     COL_REASON,
     COL_NB_OLD_VER,
+    COL_NB_OLD_VER_TOTAL,
     COL_NB
 } col_t;
 
@@ -99,7 +100,6 @@ typedef struct _progress_win_t {
 typedef struct _prefs_win_t {
     GtkWidget    *window;
     GtkWidget    *filechooser;
-    GtkWidget    *combo;
     GtkWidget    *entry;
     GtkWidget    *chk_old_pkgrel;
     GtkWidget    *chk_sane_sort_indicator;
@@ -107,6 +107,7 @@ typedef struct _prefs_win_t {
     GtkTreeView  *tree_ai;
     GtkTreeModel *model_ai;
     gboolean      ai_updated;
+    GtkWidget    *entry_ai;
 } prefs_win_t;
 
 typedef struct _pkgclip_t {
@@ -121,6 +122,7 @@ typedef struct _pkgclip_t {
     recomm_t         recomm[NB_REASONS];
     int              nb_old_ver;
     alpm_list_t     *as_installed;
+    int              nb_old_ver_ai;
     
     /* app/gui */
     gboolean         in_gtk_main;

@@ -320,6 +320,16 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
                     free (s);
                 }
             }
+            else if (strcmp (key, "NbOldVersionAsInstalled") == 0)
+            {
+                char *s;
+                setstringoption (value, &s);
+                if (NULL != s)
+                {
+                    pkgclip->nb_old_ver_ai = atoi (s);
+                    free (s);
+                }
+            }
             else if (strcmp (key, "AsInstalled") == 0)
             {
                 setrepeatingoption (value, &(pkgclip->as_installed));
@@ -553,6 +563,7 @@ new_pkgclip (void)
     pkgclip->recomm[REASON_PKG_NOT_INSTALLED]       = RECOMM_REMOVE;
     pkgclip->recomm[REASON_AS_INSTALLED] = pkgclip->recomm[REASON_INSTALLED];
     pkgclip->nb_old_ver = 1;
+    pkgclip->nb_old_ver_ai = 0;
     
     /* parse config file, if any */
     char file[PATH_MAX];
@@ -619,6 +630,15 @@ save_config (pkgclip_t *pkgclip)
     if (pkgclip->nb_old_ver != 1)
     {
         snprintf (buf, 1024, "NbOldVersion = %d\n", pkgclip->nb_old_ver);
+        if (EOF == fputs (buf, fp))
+        {
+            goto err_save;
+        }
+    }
+    
+    if (pkgclip->nb_old_ver_ai != 0)
+    {
+        snprintf (buf, 1024, "NbOldVersionAsInstalled = %d\n", pkgclip->nb_old_ver_ai);
         if (EOF == fputs (buf, fp))
         {
             goto err_save;

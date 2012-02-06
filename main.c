@@ -113,24 +113,30 @@ rend_recomm (GtkTreeViewColumn *column _UNUSED_, GtkCellRenderer *renderer,
 
 static void
 rend_reason (GtkTreeViewColumn *column _UNUSED_, GtkCellRenderer *renderer,
-    GtkTreeModel *store, GtkTreeIter *iter, pkgclip_t *pkgclip)
+    GtkTreeModel *store, GtkTreeIter *iter, gpointer data _UNUSED_)
 {
     reason_t reason;
-    int nb_old_ver;
+    int nb_old_ver, nb_old_ver_total;
     
     gtk_tree_model_get (store, iter, COL_REASON, &reason, -1);
     if (reason == REASON_OLDER_VERSION)
     {
         char buf[255];
-        gtk_tree_model_get (store, iter, COL_NB_OLD_VER, &nb_old_ver, -1);
-        snprintf (buf, 255, reason_label[reason], nb_old_ver, pkgclip->nb_old_ver);
+        gtk_tree_model_get (store, iter,
+            COL_NB_OLD_VER,         &nb_old_ver,
+            COL_NB_OLD_VER_TOTAL,   &nb_old_ver_total,
+            -1);
+        snprintf (buf, 255, reason_label[reason], nb_old_ver, nb_old_ver_total);
         g_object_set (renderer, "text", buf, NULL);
     }
     else if (reason == REASON_ALREADY_OLDER_VERSION)
     {
         char buf[255];
-        snprintf (buf, 255, reason_label[reason], pkgclip->nb_old_ver,
-            (pkgclip->nb_old_ver > 1) ? "versions" : "version");
+        gtk_tree_model_get (store, iter,
+            COL_NB_OLD_VER_TOTAL,   &nb_old_ver_total,
+            -1);
+        snprintf (buf, 255, reason_label[reason], nb_old_ver_total,
+            (nb_old_ver_total > 1) ? "versions" : "version");
         g_object_set (renderer, "text", buf, NULL);
     }
     else
@@ -236,9 +242,9 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
     alpm_db_t *db_local = alpm_option_get_localdb (pkgclip->handle);
     const char *last_pkg = NULL;
     const char *inst_ver = NULL;
-    int old_ver;
+    int old_ver, nb_old_ver;
     char *pkgrel = NULL;
-    gboolean is_installed = FALSE;
+    int is_installed = 0;
     
     for (i = pkgclip->packages; i; i = alpm_list_next (i))
     {
@@ -249,23 +255,25 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
         {
             last_pkg = pc_pkg->name;
             old_ver = 0;
+            nb_old_ver = pkgclip->nb_old_ver;
             
             /* is it installed? */
             alpm_pkg_t *pkg = alpm_db_get_pkg (db_local, pc_pkg->name);
-            is_installed = (NULL != pkg);
-            if (is_installed)
+            if (NULL != pkg)
             {
+                is_installed = 1;
                 inst_ver = alpm_pkg_get_version (pkg);
                 pkgrel = strrchr(inst_ver, '-');
             }
             else
             {
+                is_installed = 0;
                 inst_ver = NULL;
                 pkgrel = NULL;
             }
         }
         
-        if (is_installed)
+        if (is_installed > 0)
         {
             int cmp = alpm_pkg_vercmp (pc_pkg->version, inst_ver);
             if (cmp == 0)
@@ -278,7 +286,7 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
                 /* older version, we only keep a certain amount */
                 ++old_ver;
                 /* not yet reached? */
-                if (old_ver <= pkgclip->nb_old_ver)
+                if (old_ver <= nb_old_ver)
                 {
                     /* but: should we check if it's not just an old pkgrel? */
                     if (pkgclip->old_pkgrel)
@@ -340,7 +348,8 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
         {
             /* treat as if installed */
             pc_pkg->reason = REASON_AS_INSTALLED;
-            is_installed = TRUE;
+            is_installed = 2;
+            nb_old_ver = pkgclip->nb_old_ver_ai;
             inst_ver = pc_pkg->version;
             pkgrel = strrchr(inst_ver, '-');
         }
@@ -366,14 +375,15 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
         
         gtk_list_store_append (pkgclip->store, &iter);
         gtk_list_store_set (pkgclip->store, &iter,
-            COL_PC_PKG,     pc_pkg,
-            COL_PACKAGE,    pc_pkg->name,
-            COL_VERSION,    pc_pkg->version,
-            COL_SIZE,       pc_pkg->filesize,
-            COL_RECOMM,     pc_pkg->recomm,
-            COL_REMOVE,     pc_pkg->remove,
-            COL_REASON,     pc_pkg->reason,
-            COL_NB_OLD_VER, old_ver,
+            COL_PC_PKG,             pc_pkg,
+            COL_PACKAGE,            pc_pkg->name,
+            COL_VERSION,            pc_pkg->version,
+            COL_SIZE,               pc_pkg->filesize,
+            COL_RECOMM,             pc_pkg->recomm,
+            COL_REMOVE,             pc_pkg->remove,
+            COL_REASON,             pc_pkg->reason,
+            COL_NB_OLD_VER,         old_ver,
+            COL_NB_OLD_VER_TOTAL,   nb_old_ver,
             -1);
     }
 
@@ -1277,6 +1287,15 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
             needs_save = TRUE;
         }
         
+        s = (gchar *) gtk_entry_get_text (GTK_ENTRY (pkgclip->prefs->entry_ai));
+        i = atoi (s);
+        if (i != pkgclip->nb_old_ver_ai)
+        {
+            pkgclip->nb_old_ver_ai = i;
+            needs_refresh = TRUE;
+            needs_save = TRUE;
+        }
+        
         is_on = gtk_toggle_button_get_active (
             GTK_TOGGLE_BUTTON (pkgclip->prefs->chk_old_pkgrel));
         if (is_on != pkgclip->old_pkgrel)
@@ -1321,8 +1340,8 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
         pkgclip->nb_old_ver = 1;
         pkgclip->old_pkgrel = TRUE;
         pkgclip->autoload = TRUE;
-        
         FREELIST (pkgclip->as_installed);
+        pkgclip->nb_old_ver_ai = 0;
 
         pkgclip->recomm[REASON_NEWER_THAN_INSTALLED]    = RECOMM_KEEP;
         pkgclip->recomm[REASON_INSTALLED]               = RECOMM_KEEP;
@@ -1604,7 +1623,6 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     
     GtkWidget *combo;
     combo = gtk_combo_box_text_new_with_entry ();
-    pkgclip->prefs->combo = combo;
     GtkWidget *entry;
     entry = gtk_bin_get_child (GTK_BIN (combo));
     pkgclip->prefs->entry = entry;
@@ -1656,9 +1674,21 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_show (check);
     
     /* ** As Installed ** */
+    GtkWidget *expander;
+    expander = gtk_expander_new ("Packages to treat as if they were installed");
+    gtk_box_pack_start (GTK_BOX (vbox), expander, FALSE, FALSE, 15);
+    gtk_widget_show (expander);
+    
+    /* vbox */
+    GtkWidget *vbox_exp;
+    vbox_exp = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add (GTK_CONTAINER (expander), vbox_exp);
+    gtk_widget_show (vbox_exp);
+    
+    /* hbox */
     GtkWidget *hbox;
     hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 15);
+    gtk_box_pack_start (GTK_BOX (vbox_exp), hbox, FALSE, FALSE, 15);
     gtk_widget_show (hbox);
     
     /* liststore for as_installed list */
@@ -1723,7 +1753,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     g_object_set (G_OBJECT (renderer), "editable", TRUE, NULL);
     g_signal_connect (G_OBJECT (renderer), "edited",
                       G_CALLBACK (prefs_renderer_edited_cb), (gpointer) pkgclip);
-    column = gtk_tree_view_column_new_with_attributes ("Packages to treat As Installed:",
+    column = gtk_tree_view_column_new_with_attributes ("Packages Name",
                                                        renderer,
                                                        "text", 0,
                                                        NULL);
@@ -1754,6 +1784,36 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_container_add (GTK_CONTAINER (scrolled), list);
     gtk_widget_show (list);
     
+    /* nb old ver ai */
+    hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_pack_start (GTK_BOX (vbox_exp), hbox, FALSE, FALSE, 0);
+    gtk_widget_show (hbox);
+    
+    label = gtk_label_new ("Number of old versions to keep:");
+    gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
+    gtk_widget_set_tooltip_text (label, "How many packages of older versions to keep for packages treated As Installed, besides the one installed (or any newer)");
+    gtk_widget_show (label);
+    
+    combo = gtk_combo_box_text_new_with_entry ();
+    entry = gtk_bin_get_child (GTK_BIN (combo));
+    pkgclip->prefs->entry_ai = entry;
+    for (i = 0; i <= 10; ++i)
+    {
+        snprintf (buf, 3, "%d", i);
+        gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), buf);
+    }
+    if (pkgclip->nb_old_ver <= 10)
+    {
+        gtk_combo_box_set_active (GTK_COMBO_BOX (combo), pkgclip->nb_old_ver_ai);
+    }
+    else
+    {
+        snprintf (buf, 3, "%d", pkgclip->nb_old_ver_ai);
+        gtk_entry_set_text (GTK_ENTRY (entry), buf);
+    }
+    gtk_box_pack_start (GTK_BOX (hbox), combo, TRUE, FALSE, 0);
+    gtk_widget_set_tooltip_text (combo, "How many packages of older versions to keep for packages treated As Installed, besides the one installed (or any newer)");
+    gtk_widget_show (combo);
     
     /* ** buttons ** */
     
@@ -2166,7 +2226,8 @@ main (int argc, char *argv[])
         G_TYPE_BOOLEAN, /* remove */
         G_TYPE_INT,     /* recomm */
         G_TYPE_INT,     /* reason */
-        G_TYPE_INT      /* nb old ver */
+        G_TYPE_INT,     /* nb old ver */
+        G_TYPE_INT      /* nb old ver total */
         );
     pkgclip->store = store;
     /* set our custom sort function for COL_PACKAGE */
@@ -2280,7 +2341,7 @@ main (int argc, char *argv[])
     g_signal_connect (G_OBJECT (column), "clicked",
                      G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     gtk_tree_view_column_set_cell_data_func (column, renderer,
-        (GtkTreeCellDataFunc) rend_reason, (gpointer) pkgclip, NULL);
+        (GtkTreeCellDataFunc) rend_reason, NULL, NULL);
     gtk_tree_view_column_set_resizable (column, TRUE);
     gtk_tree_view_append_column (GTK_TREE_VIEW (list), column);
     
