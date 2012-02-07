@@ -1,4 +1,4 @@
-.TH PkgClip 1 "2012-01-10" 0.1.0 "Cached Packages Trimmer Utility"
+.TH PkgClip 1 "2012-02-07" 0.1.2 "Cached Packages Trimmer Utility"
 .SH NAME
 PkgClip \- Cached Packages Trimmer Utility
 .SH SYNOPSIS
@@ -28,6 +28,11 @@ shall be removed, and which shall not.
 For each package, PkgClip will check whether or not it is installed on the system.
 The test will determine whether this version of the package is installed, or another
 one.
+.P
+\fBTreated as if it was installed\fR - Recommendation: \fBKeep\fR
+.RS 4
+A package not installed, but treated as if it was. (see \fBPREFERENCES\fR below) 
+.RE
 .P
 \fBMore recent than installed version\fR - Recommendation: \fBKeep\fR
 .RS 4
@@ -119,6 +124,25 @@ upon start. Should you not want that to happen, this will help you achieve your
 goal.
 .RE
 .P
+\fBPackages to treat as if they were installed\fR
+.RS 4
+You can list here packages for which, if no version is currently installed,
+PkgClip will treat the most recent version in cache as if it was installed. Then,
+all other versions will be treated as usual.
+.P
+This means that older packages will be kept or not based on settings for old
+package releases and number of old versions to keep. However, you can set a
+different \fBnumber of old versions to keep\fR for such packages.
+.P
+This allows you e.g. to keep the most recent version of a given package, even
+if it's not installed. For instance because you only install it every once in
+a while to e.g. compile something, and then remove it.
+.P
+Note that you can easilly add/remove packages to/from the list without the need
+to open the Preferences window. Simply select one (or more) package(s), then use
+menu |fIEdit|Add (Remove) Selection to (from) As Installed List\fR
+.RE
+.P
 
 .SH REMOVING PACKAGES
 Removing packages is not something you should be able to do as a user, since
@@ -153,6 +177,8 @@ the following key, with a value of either \fBKeep\fR or \fBRemove\fR
 (e.g. RecommForNewerThanInstalled = Remove)
 .P
 .RS 4
+RecommForAsInstalled
+
 RecommForNewerThanInstalled
 
 RecommForInstalled

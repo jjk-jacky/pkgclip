@@ -2142,7 +2142,7 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* remove selection from list */
-    menuitem = gtk_image_menu_item_new_with_label ("Remove Selection to As Installed list");
+    menuitem = gtk_image_menu_item_new_with_label ("Remove Selection from As Installed list");
     g_signal_connect (G_OBJECT (menuitem), "activate",
         G_CALLBACK (menu_remove_as_installed_selection_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
