@@ -1700,6 +1700,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     GtkWidget *list;
     list = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
     pkgclip->prefs->tree_ai = GTK_TREE_VIEW (list);
+    g_object_unref (store);
     
     /* vbox - sort of a toolbar but vertical */
     GtkWidget *vbox_tb;
@@ -2238,6 +2239,7 @@ main (int argc, char *argv[])
     GtkWidget *list;
     list = gtk_tree_view_new_with_model (GTK_TREE_MODEL (store));
     pkgclip->list = list;
+    g_object_unref (store);
     gtk_tree_view_set_headers_clickable (GTK_TREE_VIEW (list), TRUE);
     /* multiple selection */
     GtkTreeSelection *selection;
