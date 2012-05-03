@@ -90,7 +90,7 @@ static void
 rend_size (GtkTreeViewColumn *column _UNUSED_, GtkCellRenderer *renderer _UNUSED_,
     GtkTreeModel *store, GtkTreeIter *iter, col_t col)
 {
-    off_t size;
+    guint size;
     double new_size;
     const char *unit;
     char buf[23];
@@ -593,7 +593,7 @@ list_query_tooltip_cb (GtkWidget *widget, gint x, gint y, gboolean keyboard _UNU
             size_t l, i;
             char *s;
             
-            gint col = (gint) g_object_get_data (G_OBJECT (column), "col-id");
+            gint col = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (column), "col-id"));
             
             switch (col)
             {
@@ -792,7 +792,7 @@ on_signal (GDBusProxy *proxy _UNUSED_,
         
         if (pkgclip->progress_win->em_len + len + 1 >= pkgclip->progress_win->em_alloc)
         {
-            pkgclip->progress_win->em_alloc += len + 1024;
+            pkgclip->progress_win->em_alloc += (guint) len + 1024;
             pkgclip->progress_win->error_messages = (char *) realloc (
                 pkgclip->progress_win->error_messages,
                 pkgclip->progress_win->em_alloc * sizeof (char *));
@@ -803,7 +803,7 @@ on_signal (GDBusProxy *proxy _UNUSED_,
             }
         }
         strcat (pkgclip->progress_win->error_messages, buf);
-        pkgclip->progress_win->em_len += len;
+        pkgclip->progress_win->em_len += (guint) len;
     }
     else
     {
@@ -1095,14 +1095,14 @@ menu_unselect_all_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
 static void
 menu_select_all_reason_cb (GtkMenuItem *menuitem, pkgclip_t *pkgclip)
 {
-    gint reason = (gint) g_object_get_data (G_OBJECT (menuitem), "reason");
+    gint reason = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (menuitem), "reason"));
     change_marked (MARK_REASON, reason, pkgclip);
 }
 
 static void
 menu_unselect_all_reason_cb (GtkMenuItem *menuitem, pkgclip_t *pkgclip)
 {
-    gint reason = (gint) g_object_get_data (G_OBJECT (menuitem), "reason");
+    gint reason = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (menuitem), "reason"));
     change_marked (UNMARK_REASON, reason, pkgclip);
 }
 
@@ -1130,7 +1130,7 @@ change_as_installed_selection_foreach (GtkTreeModel *model,
                                  GtkTreeIter *iter,
                                  void *ptr[3])
 {
-    gboolean adding = (gboolean) ptr[0];
+    gboolean adding = GPOINTER_TO_INT (ptr[0]);
     gboolean *changed = (gboolean *) ptr[1];
     pkgclip_t *pkgclip = (pkgclip_t *) ptr[2];
     pc_pkg_t *pc_pkg;
@@ -1171,7 +1171,7 @@ static void
 change_as_installed (gboolean adding, pkgclip_t *pkgclip)
 {
     gboolean changed = FALSE;
-    void *ptr[3] = {(void *) adding, (void *) &changed, (void *) pkgclip};
+    void *ptr[3] = {GINT_TO_POINTER (adding), (void *) &changed, (void *) pkgclip};
     
     gtk_tree_selection_selected_foreach (gtk_tree_view_get_selection (
         GTK_TREE_VIEW (pkgclip->list)),
@@ -1241,7 +1241,7 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
     gboolean is_on;
     GtkTreeIter iter;
     
-    btn_id = (gint) g_object_get_data (G_OBJECT (button), "btn-id");
+    btn_id = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (button), "btn-id"));
     
     /* OK */
     if (btn_id == 1)
@@ -1388,7 +1388,7 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
                 break;
             }
             /* grab associated col-id */
-            col = (gint) g_object_get_data (G_OBJECT (column), "col-id");
+            col = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (column), "col-id"));
             /* is it the one we want? */
             if (col == c)
             {
@@ -1741,8 +1741,8 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     /* a scrolledwindow for the list */
     GtkWidget *scrolled;
     scrolled = gtk_scrolled_window_new (
-        gtk_tree_view_get_hadjustment (GTK_TREE_VIEW (list)),
-        gtk_tree_view_get_vadjustment (GTK_TREE_VIEW (list)));
+        gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (list)),
+        gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (list)));
     gtk_box_pack_start (GTK_BOX (hbox), scrolled, TRUE, TRUE, 0);
     gtk_widget_show (scrolled);
     
@@ -2052,7 +2052,7 @@ main (int argc, char *argv[])
         mnu_reasons_desc_select[i] = strdup (buf2);
         /* menuitem */
         submenuitem = gtk_image_menu_item_new_with_label (buf);
-        g_object_set_data (G_OBJECT (submenuitem), "reason", (gpointer) i);
+        g_object_set_data (G_OBJECT (submenuitem), "reason", GINT_TO_POINTER (i));
         g_signal_connect (G_OBJECT (submenuitem), "activate",
             G_CALLBACK (menu_select_all_reason_cb), (gpointer) pkgclip);
         g_signal_connect (G_OBJECT (submenuitem), "select",
@@ -2092,7 +2092,7 @@ main (int argc, char *argv[])
         mnu_reasons_desc_unselect[i] = strdup (buf2);
         /* menuitem */
         submenuitem = gtk_image_menu_item_new_with_label (buf);
-        g_object_set_data (G_OBJECT (submenuitem), "reason", (gpointer) i);
+        g_object_set_data (G_OBJECT (submenuitem), "reason", GINT_TO_POINTER (i));
         g_signal_connect (G_OBJECT (submenuitem), "activate",
             G_CALLBACK (menu_unselect_all_reason_cb), (gpointer) pkgclip);
         g_signal_connect (G_OBJECT (submenuitem), "select",
@@ -2259,8 +2259,8 @@ main (int argc, char *argv[])
     /* a scrolledwindow for the list */
     GtkWidget *scrolled;
     scrolled = gtk_scrolled_window_new (
-        gtk_tree_view_get_hadjustment (GTK_TREE_VIEW (list)),
-        gtk_tree_view_get_vadjustment (GTK_TREE_VIEW (list)));
+        gtk_scrollable_get_hadjustment (GTK_SCROLLABLE (list)),
+        gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (list)));
     gtk_box_pack_start (GTK_BOX (vbox), scrolled, TRUE, TRUE, 0);
     gtk_widget_show (scrolled);
     
