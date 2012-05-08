@@ -893,6 +893,66 @@ dbus_method_cb (GObject *source _UNUSED_, GAsyncResult *result, pkgclip_t *pkgcl
 }
 
 static void
+select_prev_next_marked (gboolean next, pkgclip_t *pkgclip)
+{
+    GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (pkgclip->list));
+    GtkTreeModel     *model = GTK_TREE_MODEL (pkgclip->store);
+    GList            *list;
+    GtkTreeIter       iter;
+    gboolean          marked;
+    gboolean        (*select_fn) (GtkTreeModel *model, GtkTreeIter *iter);
+    
+    list = gtk_tree_selection_get_selected_rows (selection, NULL);
+    if (list && list->data)
+    {
+        /* get GtkTreeIter from GtkTreePath */
+        if (!gtk_tree_model_get_iter (model, &iter, list->data))
+        {
+            goto clean;
+        }
+    }
+    else
+    {
+        /* no selection */
+        goto clean;
+    }
+    select_fn = (next) ? gtk_tree_model_iter_next : gtk_tree_model_iter_previous;
+    while (select_fn (model, &iter))
+    {
+        gtk_tree_model_get (model, &iter, COL_REMOVE, &marked, -1);
+        if (marked)
+        {
+            GtkTreePath *path;
+            
+            path = gtk_tree_model_get_path (model, &iter);
+            gtk_tree_selection_unselect_all (selection);
+            gtk_tree_selection_select_path (selection, path);
+            gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (pkgclip->list),
+                                          path, NULL, TRUE, 0.5, 0.0);
+            
+            
+            gtk_tree_path_free (path);
+            goto clean;
+        }
+    }
+    gtk_tree_selection_unselect_all (selection);
+clean:
+    g_list_free_full (list, (GDestroyNotify) gtk_tree_path_free);
+}
+
+static void
+btn_prev_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+{
+    select_prev_next_marked (FALSE, pkgclip);
+}
+
+static void
+btn_next_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+{
+    select_prev_next_marked (TRUE, pkgclip);
+}
+
+static void
 btn_remove_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
 {
     GError *error = NULL;
@@ -2366,8 +2426,9 @@ main (int argc, char *argv[])
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, TRUE, 0);
     gtk_widget_show (label);
     
-    /* button */
     GtkWidget *button;
+    
+    /* button: Remove marked packages */
     image = gtk_image_new_from_stock (GTK_STOCK_DELETE, GTK_ICON_SIZE_MENU);
     button = gtk_button_new_with_label ("Remove marked packages...");
     pkgclip->button = button;
@@ -2382,6 +2443,34 @@ main (int argc, char *argv[])
         G_CALLBACK (btn_leave_cb), (gpointer) pkgclip);
     gtk_widget_set_tooltip_text (button, "Will remove, after a confirmation and PolicyKit authentification, all marked packages");
     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 10);
+    gtk_widget_show (button);
+    
+    /* button: Select next marked package */
+    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_NEXT, GTK_ICON_SIZE_MENU);
+    button = gtk_button_new ();
+    gtk_button_set_image (GTK_BUTTON (button), image);
+    g_signal_connect (G_OBJECT (button), "clicked",
+                     G_CALLBACK (btn_next_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (button), "enter-notify-event",
+        G_CALLBACK (btn_enter_cb), (gpointer) "Select next marked package");
+    g_signal_connect (G_OBJECT (button), "leave-notify-event",
+        G_CALLBACK (btn_leave_cb), (gpointer) pkgclip);
+    gtk_widget_set_tooltip_text (button, "Select next marked package");
+    gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+    gtk_widget_show (button);
+    
+    /* button: Select previous marked package */
+    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS, GTK_ICON_SIZE_MENU);
+    button = gtk_button_new ();
+    gtk_button_set_image (GTK_BUTTON (button), image);
+    g_signal_connect (G_OBJECT (button), "clicked",
+                     G_CALLBACK (btn_prev_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (button), "enter-notify-event",
+        G_CALLBACK (btn_enter_cb), (gpointer) "Select previous marked package");
+    g_signal_connect (G_OBJECT (button), "leave-notify-event",
+        G_CALLBACK (btn_leave_cb), (gpointer) pkgclip);
+    gtk_widget_set_tooltip_text (button, "Select previous marked package");
+    gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
     gtk_widget_show (button);
     
     /* signals */
