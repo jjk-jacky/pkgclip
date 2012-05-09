@@ -1966,7 +1966,7 @@ menu_about_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_window_set_skip_pager_hint (GTK_WINDOW(about), TRUE);
     gtk_about_dialog_set_program_name (about, "PkgClip");
     gtk_about_dialog_set_version (about, PACKAGE_VERSION);
-    gtk_about_dialog_set_comments (about, PACKAGE_TAGLINE);
+    gtk_about_dialog_set_comments (about, PACKAGE_TAG);
     gtk_about_dialog_set_website (about, "https://bitbucket.org/jjacky/pkgclip");
     gtk_about_dialog_set_website_label (about, "https://bitbucket.org/jjacky/pkgclip");
     gtk_about_dialog_set_copyright (about, "Copyright (C) 2012 Olivier Brunel");
@@ -2002,6 +2002,29 @@ int
 main (int argc, char *argv[])
 {
     pkgclip_t *pkgclip;
+    
+    /* parse command line -- very basic stuff */
+    if (argc > 1)
+    {
+        if (strcmp (argv[1], "-h") == 0 || strcmp (argv[1], "--help") == 0)
+        {
+            printf ("PkgClip - " PACKAGE_TAG " v" PACKAGE_VERSION "\n\n");
+            printf (" -h, --help        Show this help screen and exit\n");
+            printf (" -V, --version     Show version information and exit\n");
+            printf ("\nFor more, please refer to the man page: man pkgclip\n");
+            return 0;
+        }
+        else if (strcmp (argv[1], "-V") == 0 || strcmp (argv[1], "--version") == 0)
+        {
+            printf ("PkgClip - " PACKAGE_TAG " v" PACKAGE_VERSION "\n");
+            printf ("Copyright (C) 2012 Olivier Brunel\n");
+            printf ("License GPLv3+: GNU GPL version 3 or later"
+                    " <http://gnu.org/licenses/gpl.html>\n");
+            printf ("This is free software: you are free to change and redistribute it.\n");
+            printf ("There is NO WARRANTY, to the extent permitted by law.\n");
+            return 0;
+        }
+    }
     
     gtk_init (&argc, &argv);
     pkgclip = new_pkgclip ();

@@ -33,7 +33,7 @@
 #include <alpm.h>
 #include <alpm_list.h>
 
-#define PACKAGE_TAGLINE         "Cached Packages Trimmer Utility"
+#define PACKAGE_TAG             "Cached Packages Trimmer Utility"
 
 #define PACMAN_CONF             "/etc"
 #define ROOT_PATH               "/"
