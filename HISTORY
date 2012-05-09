@@ -1,4 +1,20 @@
 
+# 05/10/2012; v1.0.0
+
+- Added buttons to "Select previous/next marked package" to allow quick & easy
+review of marked packages
+
+- Added menus for "Select previous/next marked package" and "Remove marked packages",
+all with accelerators
+
+- Added minimum command line options (--help, --version)
+
+- Under certain conditions, all sizes on the list could show as "128 TiB" (in
+list only, tooltips & total were correct), fixed
+
+- Other minor fixes
+
+
 # 02/07/2012; v0.1.2
 
 - Added "As Installed" list, to treat packages as if they were installed.
