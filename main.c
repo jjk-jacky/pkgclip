@@ -20,7 +20,7 @@
  * PkgClip. If not, see http://www.gnu.org/licenses/
  */
 
-#define _BSD_SOURCE /* for strdup w/ -std=c99 */
+#include "config.h"
 
 /* C */
 #include <stdlib.h>
@@ -1965,8 +1965,8 @@ menu_about_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_window_set_skip_taskbar_hint (GTK_WINDOW(about), TRUE);
     gtk_window_set_skip_pager_hint (GTK_WINDOW(about), TRUE);
     gtk_about_dialog_set_program_name (about, "PkgClip");
-    gtk_about_dialog_set_version (about, PKGCLIP_VERSION);
-    gtk_about_dialog_set_comments (about, PKGCLIP_TAGLINE);
+    gtk_about_dialog_set_version (about, PACKAGE_VERSION);
+    gtk_about_dialog_set_comments (about, PACKAGE_TAGLINE);
     gtk_about_dialog_set_website (about, "https://bitbucket.org/jjacky/pkgclip");
     gtk_about_dialog_set_website_label (about, "https://bitbucket.org/jjacky/pkgclip");
     gtk_about_dialog_set_copyright (about, "Copyright (C) 2012 Olivier Brunel");
@@ -2014,7 +2014,7 @@ main (int argc, char *argv[])
     GtkWidget *window;
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     pkgclip->window = window;
-    gtk_window_set_title (GTK_WINDOW (window), "PkgClip v" PKGCLIP_VERSION);
+    gtk_window_set_title (GTK_WINDOW (window), "PkgClip v" PACKAGE_VERSION);
     gtk_container_set_border_width (GTK_CONTAINER (window), 0);
     gtk_window_set_has_resize_grip (GTK_WINDOW (window), FALSE);
     gtk_window_set_default_size (GTK_WINDOW (window), 800, 600);

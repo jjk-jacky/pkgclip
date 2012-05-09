@@ -21,7 +21,7 @@
  * PkgClip. If not, see http://www.gnu.org/licenses/
  */
 
-#define _BSD_SOURCE /* for strdup w/ -std=c99 */
+#include "config.h"
 
 /* C */
 #include <ctype.h>

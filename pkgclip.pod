@@ -1,0 +1,241 @@
+=head1 NAME
+
+PkgClip - Cached Packages Trimmer Utility
+
+=head1 SYNOPSIS
+
+B<pkgclip> [I<OPTION>]
+
+=head1 OPTIONS
+
+=over
+
+=item B<-h, --help>
+
+Show a little help text and exit
+
+=item B<-V, --version>
+
+Show version information and exit
+
+=back
+
+=head1 DESCRIPTION
+
+B<PkgClip> is a little helper that will scan your pacman cache directories
+and help you trim it a bit.
+
+Whenever B<pacman> downloads packages, it saves them in a cache directory,
+and never removes them. Over time, this cache can grow a lot.
+
+While pacman does offer options to clean your cache, they are very basic.
+Its option B<--clean> (B<-c>) will remove packages that are no longer
+installed from the cache (as well as currently unused sync databases. Note that
+PkgClip does not touch databases, only packages.), or remove all packages
+if you specify it twice.
+
+PkgClip aims at giving you a little more options. To do so, it will
+classify all packages into different "groups" (also called "reasons", as in
+reason for the recommended action), each group having a recommendation (Keep or
+Remove), used as default choice.
+
+You will of course be able to then review it all, and decides which packages
+shall be removed, and which shall not.
+
+
+=head1 REASONS (GROUPS)
+
+For each package, PkgClip will check whether or not it is installed on the system.
+The test will determine whether this version of the package is installed, or another
+one.
+
+=over
+
+=item B<Treated as if it was installed> - Recommendation: B<Keep>
+
+A package not installed, but treated as if it was. (see B<PREFERENCES> below) 
+
+=item B<More recent than installed version> - Recommendation: B<Keep>
+
+A package of a version more recent than the one currently installed.
+
+=item B<Installed on system> - Recommendation: B<Keep>
+
+A package currently installed.
+
+=item B<Recent older version> - Recommendation: B<Keep>
+
+A package of an older version than the one currently installed. If option
+B<Remove older package releases> is enabled, this will not include packages
+of the same version but with a different package release number (I<pkgrel>).
+
+=item B<Older version> - Recommendation: B<Remove>
+
+A package of an older version than the one currently installed, and older than
+as many packages of older version as specified (see B<PREFERENCES> below) have
+been found.
+
+=item B<Previous package release> - Recommendation: B<Remove>
+
+A package of the same version than the one currently installed, but with an older
+package release number (I<pkgrel>). Only if option B<Remove older package
+releases> is enabled.
+
+=item B<Package not installed on system (any version)> - Recommendation: B<Remove>
+
+A package for which no version is currently installed.
+
+=back
+
+
+=head1 PREFERENCES
+
+Preferences are available through the menu I<Edit|Preferences> (Note: you can
+pop up the menu I<Edit> by right-clicking on the list). When pressing "OK"
+they will be automatically applied, then saved to a file B<pkgclip.conf>
+located inside a folder B<.config> in your HOME directory.
+
+=over
+
+=item I<Location of pacman.conf>
+
+The directory where your B<pacman.conf> file is located. PkgClip parses this
+file in order to use B<libalpm> and access your local database, as well as
+determine your cache directories.
+
+=item I<Number of old versions to keep>
+
+How many versions of older than installed to keep. The Nth more recent versions
+will be classified as B<Recent older version>, older ones will fall under
+B<Older version>.
+
+If you do not want to keep any older version, simply specify 0 (zero).
+
+Note that if option B<Remove older package releases> is enabled, this will
+only refer to packages for older versions, not same version number but with an
+older package release number.
+
+=item I<Remove older package releases>
+
+When enabled, PkgClip will classify differently packages of older versions, and
+packages of the same version as currently installed, but with an older package
+release, the later being marked for removal (B<Previous package release>).
+
+All packages have similar names, such as: package-name-1.2.3-4
+
+Here, the version number is 1.2.3, while 4 is the package release (I<pkgrel>).
+
+For example, with packages foobar-1.3-3, foobar-1.3-2 and foobar-1.2-4 and
+foobar-1.3-3 being installed, this option will have foobar-1.3-2 marked for
+removal while keeping foobar-1.2-4; while without it it would be the other
+way around (assuming you keep one older version).
+
+=item I<Use sane sort indicator>
+
+Makes it so that when sort descendingly, the arrow points down... as it should.
+
+=item I<Do not load packages on start>
+
+By default PkgClip automatically scans your cache directories and loads packages
+upon start. Should you not want that to happen, this will help you achieve your
+goal.
+
+=item I<Packages to treat as if they were installed>
+
+You can list here packages for which, if no version is currently installed,
+PkgClip will treat the most recent version in cache as if it was installed.
+Then, all other versions will be treated as usual.
+
+This means that older packages will be kept or not based on settings for old
+package releases and number of old versions to keep. However, you can set a
+different B<number of old versions to keep> for such packages.
+
+This allows you e.g. to keep the most recent version of a given package, even
+if it's not installed. For instance because you only install it every once in
+a while to e.g. compile something, and then remove it.
+
+Note that you can easilly add/remove packages to/from the list without the need
+to open the Preferences window. Simply select one (or more) package(s), then use
+menu I<Edit|Add (Remove) Selection to (from) As Installed List>
+
+=back
+
+
+=head1 REMOVING PACKAGES
+
+Removing packages is not something you should be able to do as a user, since
+all those files belong to root. In order to remove those files (without the
+need to be run as root), PkgClip rely on B<PolicyKit>.
+
+When you're ready and want PkgClip to remove all marked (checked) packages,
+simply use the menu or the button. After a final confirmation, you should see
+your B<PolicyKit> agent show up and ask for your password. Once validated, files
+will be removed as expected.
+
+Note that this obviously depends on your configuration. For instance if you
+do not have a PolicyKit agent installed/running, PkgClip will simply fail since
+you cannot be authentificated.
+
+
+=head1 CHANGE RECOMMENDATIONS
+
+If you are not pleased with the default recommendations for each reasons/groups,
+you can change them.
+
+To do so, you will need to manually edit the configuration file. Note that while
+no GUI exists for those options, they will obviously be preserved when PkgClip
+saves its preferences.
+
+Also note that the different labels (e.g. option names) will B<NOT> be
+updated to reflect any changes you might have done. That is, option B<Remove
+older package releases> will continue to be called that, even if you changed
+the default recommendation from Remove to Keep (and thus, the option would
+really mean B<Keep older package releases>).
+
+To change a recommendation, simply add into your B<pkgclip.conf> one of the
+following key, with a value of either B<Keep> or B<Remove>
+(e.g. RecommForNewerThanInstalled = Remove)
+
+=over
+
+=item RecommForAsInstalled
+
+=item RecommForNewerThanInstalled
+
+=item RecommForInstalled
+
+=item RecommForOlderVersion
+
+=item RecommForAlreadyOlderVersion
+
+=item RecommForOlderPkgrel
+
+=item RecommForPkgNotInstalled
+
+=back
+
+
+=head1 BUGS
+
+They're probably crawling somewhere in there... if you happen to catch one (or
+more), report it and I'll do my best to squash it.
+
+=head1 REPOSITORY
+
+You can find the latest source code of B<PkgClip> as well as report bugs and/or
+feature suggestions on its BitBucket repository available at
+L<https://bitbucket.org/jjacky/pkgclip>
+
+=head1 AUTHORS
+
+=over
+
+=item Olivier Brunel <i.am.jack.mail AT gmail DOT com>
+
+=item Pacman Development Team <pacman-dev AT archlinux DOT org>
+
+=back
+
+=head1 ARTWORK
+
+Icon by Hylke Bons in Discovery Icon Theme, released under CC BY-SA 3.0

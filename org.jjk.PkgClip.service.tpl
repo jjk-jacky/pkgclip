@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=org.jjk.PkgClip
-Exec=/usr/bin/pkgclip-dbus
+Exec=@BINDIR@/pkgclip-dbus
 User=root

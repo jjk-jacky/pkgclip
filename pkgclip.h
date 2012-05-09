@@ -33,8 +33,7 @@
 #include <alpm.h>
 #include <alpm_list.h>
 
-#define PKGCLIP_VERSION         "0.1.2"
-#define PKGCLIP_TAGLINE         "Cached Packages Trimmer Utility"
+#define PACKAGE_TAGLINE         "Cached Packages Trimmer Utility"
 
 #define PACMAN_CONF             "/etc"
 #define ROOT_PATH               "/"

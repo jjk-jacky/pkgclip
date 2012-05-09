@@ -1,0 +1,24 @@
+
+# 02/07/2012; v0.1.2
+
+- Added "As Installed" list, to treat packages as if they were installed.
+
+For packages installed, this will have no effect. For others, the most recent
+version will be treated as if it was installed, then same thing (i.e. regarding
+older pkgrel, etc)
+
+This can be useful for non-installed packages that one wants to keep, when
+they're needed on occasion (e.g. to compile something...)
+
+- Added option to specify number of old versions to keep specific to packages
+on "As Installed" list.
+
+
+# 01/18/2012; v0.1.1
+
+- Refresh reasons after removing files
+
+
+# 01/17/2012, v0.1.0
+
+- first release
