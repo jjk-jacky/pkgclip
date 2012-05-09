@@ -895,12 +895,14 @@ dbus_method_cb (GObject *source _UNUSED_, GAsyncResult *result, pkgclip_t *pkgcl
 static void
 select_prev_next_marked (gboolean next, pkgclip_t *pkgclip)
 {
-    GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (pkgclip->list));
+    GtkTreeView      *tree = GTK_TREE_VIEW (pkgclip->list);
+    GtkTreeSelection *selection = gtk_tree_view_get_selection (tree);
     GtkTreeModel     *model = GTK_TREE_MODEL (pkgclip->store);
     GList            *list;
     GtkTreeIter       iter;
     gboolean          marked;
     gboolean        (*select_fn) (GtkTreeModel *model, GtkTreeIter *iter);
+    GtkTreePath      *path;
     
     list = gtk_tree_selection_get_selected_rows (selection, NULL);
     if (list && list->data)
@@ -914,7 +916,24 @@ select_prev_next_marked (gboolean next, pkgclip_t *pkgclip)
     else
     {
         /* no selection */
-        goto clean;
+        if (next)
+        {
+            /* get the first visible item as starting point */
+            if (!gtk_tree_view_get_visible_range (tree, &path, NULL))
+            {
+                goto clean;
+            }
+        }
+        else
+        {
+            /* get the last visible item as starting point */
+            if (!gtk_tree_view_get_visible_range (tree, NULL, &path))
+            {
+                goto clean;
+            }
+        }
+        gtk_tree_model_get_iter (model, &iter, path);
+        gtk_tree_path_free (path);
     }
     select_fn = (next) ? gtk_tree_model_iter_next : gtk_tree_model_iter_previous;
     while (select_fn (model, &iter))
@@ -922,8 +941,6 @@ select_prev_next_marked (gboolean next, pkgclip_t *pkgclip)
         gtk_tree_model_get (model, &iter, COL_REMOVE, &marked, -1);
         if (marked)
         {
-            GtkTreePath *path;
-            
             path = gtk_tree_model_get_path (model, &iter);
             gtk_tree_selection_unselect_all (selection);
             gtk_tree_selection_select_path (selection, path);
