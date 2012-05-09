@@ -22,7 +22,7 @@ install-data-hook:
 	mv $(DESTDIR)$(docdir)/index.html $(DESTDIR)$(docdir)/html/
 
 dist-hook:
-	cp $(srcdir)/pkgclip.pod $(disdir)/
+	cp $(srcdir)/pkgclip.pod $(distdir)/
 	cp $(srcdir)/org.jjk.PkgClip.service.tpl $(distdir)/
 
 AM_CFLAGS = -g \
