@@ -134,6 +134,7 @@ typedef struct _pkgclip_t {
     GtkWidget       *label;
     GtkWidget       *button;
     GtkWidget       *mnu_reload;
+    GtkWidget       *mnu_remove;
     GtkWidget       *mnu_edit;
     
     prefs_win_t     *prefs;

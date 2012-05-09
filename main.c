@@ -189,6 +189,7 @@ set_locked (gboolean locked, pkgclip_t *pkgclip)
     pkgclip->locked = locked;
     gtk_widget_set_sensitive (pkgclip->button, !locked);
     gtk_widget_set_sensitive (pkgclip->mnu_reload, !locked);
+    gtk_widget_set_sensitive (pkgclip->mnu_remove, !locked);
     gtk_widget_set_sensitive (pkgclip->mnu_edit, !locked);
 }
 
@@ -207,6 +208,8 @@ update_label (pkgclip_t *pkgclip)
     gtk_label_set_text (GTK_LABEL (pkgclip->label), buf);
     
     gtk_widget_set_sensitive (pkgclip->button,
+        (!pkgclip->locked && pkgclip->marked_packages > 0));
+    gtk_widget_set_sensitive (pkgclip->mnu_remove,
         (!pkgclip->locked && pkgclip->marked_packages > 0));
 }
 
@@ -957,20 +960,23 @@ clean:
     g_list_free_full (list, (GDestroyNotify) gtk_tree_path_free);
 }
 
+/* used from menu as well as button */
 static void
-btn_prev_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+btn_prev_cb (gpointer p _UNUSED_, pkgclip_t *pkgclip)
 {
     select_prev_next_marked (FALSE, pkgclip);
 }
 
+/* used from menu as well as button */
 static void
-btn_next_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+btn_next_cb (gpointer p _UNUSED_, pkgclip_t *pkgclip)
 {
     select_prev_next_marked (TRUE, pkgclip);
 }
 
+/* used from menu as well as button */
 static void
-btn_remove_cb (GtkButton *button _UNUSED_, pkgclip_t *pkgclip)
+btn_remove_cb (gpointer p _UNUSED_, pkgclip_t *pkgclip)
 {
     GError *error = NULL;
     alpm_list_t *i;
@@ -2018,6 +2024,19 @@ main (int argc, char *argv[])
     gtk_window_set_icon (GTK_WINDOW (window), pixbuf);
     g_object_unref (G_OBJECT (pixbuf));
     
+    /* accelerator group */
+    GtkAccelGroup *accel_group;
+    accel_group = gtk_accel_group_new ();
+    g_intern_static_string ("<PkgClip>/PkgClip/Reload");
+    gtk_accel_map_add_entry ("<PkgClip>/PkgClip/Reload", GDK_KEY_F5, 0);
+    g_intern_static_string ("<PkgClip>/PkgClip/SelectPrev");
+    gtk_accel_map_add_entry ("<PkgClip>/PkgClip/SelectPrev", GDK_KEY_Up, GDK_SHIFT_MASK);
+    g_intern_static_string ("<PkgClip>/PkgClip/SelectNext");
+    gtk_accel_map_add_entry ("<PkgClip>/PkgClip/SelectNext", GDK_KEY_Down, GDK_SHIFT_MASK);
+    g_intern_static_string ("<PkgClip>/PkgClip/Remove");
+    gtk_accel_map_add_entry ("<PkgClip>/PkgClip/Remove", GDK_KEY_Delete, GDK_SHIFT_MASK);
+    gtk_window_add_accel_group (GTK_WINDOW (window), accel_group);
+    
     /* everything in a vbox */
     GtkWidget *vbox;
     vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
@@ -2041,15 +2060,66 @@ main (int argc, char *argv[])
     
     /* menu "PkgClip" */
     menu = gtk_menu_new ();
+    gtk_menu_set_accel_group (GTK_MENU (menu), accel_group);
     /* reload pkgs */
     menuitem = gtk_image_menu_item_new_with_label ("Reload packages from cache");
     pkgclip->mnu_reload = menuitem;
+    gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/Reload");
     image = gtk_image_new_from_stock (GTK_STOCK_REFRESH, GTK_ICON_SIZE_MENU);
-    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM(menuitem), image);
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
     g_signal_connect (G_OBJECT (menuitem), "activate",
         G_CALLBACK (menu_reload_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
         G_CALLBACK (menu_select_cb), (gpointer) "Reload list of packages from cache folder");
+    g_signal_connect (G_OBJECT (menuitem), "deselect",
+        G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* --- */
+    menuitem = gtk_separator_menu_item_new ();
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* select prev */
+    menuitem = gtk_image_menu_item_new_with_label ("Select previous marked package");
+    gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/SelectPrev");
+    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS, GTK_ICON_SIZE_MENU);
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    g_signal_connect (G_OBJECT (menuitem), "activate",
+        G_CALLBACK (btn_prev_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (menuitem), "select",
+        G_CALLBACK (menu_select_cb), (gpointer) "Select previous marked package");
+    g_signal_connect (G_OBJECT (menuitem), "deselect",
+        G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* select next */
+    menuitem = gtk_image_menu_item_new_with_label ("Select next marked package");
+    gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/SelectNext");
+    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_NEXT, GTK_ICON_SIZE_MENU);
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    g_signal_connect (G_OBJECT (menuitem), "activate",
+        G_CALLBACK (btn_next_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (menuitem), "select",
+        G_CALLBACK (menu_select_cb), (gpointer) "Select next marked package");
+    g_signal_connect (G_OBJECT (menuitem), "deselect",
+        G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* --- */
+    menuitem = gtk_separator_menu_item_new ();
+    gtk_container_add (GTK_CONTAINER (menu), menuitem);
+    gtk_widget_show (menuitem);
+    /* remove */
+    menuitem = gtk_image_menu_item_new_with_label ("Removed marked packages...");
+    pkgclip->mnu_remove = menuitem;
+    gtk_widget_set_sensitive (menuitem, FALSE);
+    gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/Remove");
+    image = gtk_image_new_from_stock (GTK_STOCK_DELETE, GTK_ICON_SIZE_MENU);
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    g_signal_connect (G_OBJECT (menuitem), "activate",
+        G_CALLBACK (btn_remove_cb), (gpointer) pkgclip);
+    g_signal_connect (G_OBJECT (menuitem), "select",
+        G_CALLBACK (menu_select_cb), (gpointer) "Remove all packages marked/checked (confirmation required)");
     g_signal_connect (G_OBJECT (menuitem), "deselect",
         G_CALLBACK (menu_deselect_cb), (gpointer) pkgclip);
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
@@ -2453,7 +2523,6 @@ main (int argc, char *argv[])
     gtk_widget_set_sensitive (button, FALSE);
     g_signal_connect (G_OBJECT (button), "clicked",
                      G_CALLBACK (btn_remove_cb), (gpointer) pkgclip);
-    //gtk_widget_add_events (list, GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
     g_signal_connect (G_OBJECT (button), "enter-notify-event",
         G_CALLBACK (btn_enter_cb), (gpointer) "Remove all packages marked/checked (confirmation required)");
     g_signal_connect (G_OBJECT (button), "leave-notify-event",
