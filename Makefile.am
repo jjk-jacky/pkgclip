@@ -7,6 +7,9 @@ nodist_man_MANS = pkgclip.1
 dist_doc_DATA = AUTHORS COPYING HISTORY README.md
 doc_DATA = index.html
 
+logodir = $(datadir)/pixmaps
+logo_DATA = pkgclip.xpm
+
 desktopdir = /usr/share/applications
 dist_desktop_DATA = pkgclip.desktop
 
