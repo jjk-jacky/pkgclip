@@ -381,7 +381,7 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
             COL_PC_PKG,             pc_pkg,
             COL_PACKAGE,            pc_pkg->name,
             COL_VERSION,            pc_pkg->version,
-            COL_SIZE,               pc_pkg->filesize,
+            COL_SIZE,               (guint) pc_pkg->filesize,
             COL_RECOMM,             pc_pkg->recomm,
             COL_REMOVE,             pc_pkg->remove,
             COL_REASON,             pc_pkg->reason,
@@ -2393,7 +2393,7 @@ main (int argc, char *argv[])
         G_TYPE_POINTER, /* pc_pkg */
         G_TYPE_STRING,  /* package */
         G_TYPE_STRING,  /* version */
-        G_TYPE_INT,     /* size */
+        G_TYPE_UINT,    /* size */
         G_TYPE_BOOLEAN, /* remove */
         G_TYPE_INT,     /* recomm */
         G_TYPE_INT,     /* reason */
