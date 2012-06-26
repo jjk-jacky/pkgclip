@@ -1,4 +1,11 @@
 
+# 06/26/2012; v1.0.1
+
+- A little bug in the display of the list of packages was fixed. It seems to sometimes (on
+32bits system only?) lead to a crash of PkgClip right after info about all packages have
+been loaded (from pacman's cache); which by default was done on application's start.
+
+
 # 05/10/2012; v1.0.0
 
 - Added buttons to "Select previous/next marked package" to allow quick & easy
