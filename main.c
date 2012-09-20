@@ -1967,8 +1967,8 @@ menu_about_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_about_dialog_set_program_name (about, "PkgClip");
     gtk_about_dialog_set_version (about, PACKAGE_VERSION);
     gtk_about_dialog_set_comments (about, PACKAGE_TAG);
-    gtk_about_dialog_set_website (about, "https://bitbucket.org/jjacky/pkgclip");
-    gtk_about_dialog_set_website_label (about, "https://bitbucket.org/jjacky/pkgclip");
+    gtk_about_dialog_set_website (about, "https://github.com/jjk-jacky/pkgclip");
+    gtk_about_dialog_set_website_label (about, "https://github.com/jjk-jacky/pkgclip");
     gtk_about_dialog_set_copyright (about, "Copyright (C) 2012 Olivier Brunel");
     gtk_about_dialog_set_license_type (about, GTK_LICENSE_GPL_3_0);
     gtk_about_dialog_set_authors (about, authors);

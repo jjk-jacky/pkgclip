@@ -16,7 +16,7 @@ Some useful links if you're looking for more info:
 
 - [blog post about PkgClip](http://mywaytoarch.tumblr.com/post/16005116198/pkgclip-does-your-pacman-cache-need-a-trim "PkgClip: Does your pacman cache need a trim?")
 
-- [source code & issue tracker](https://bitbucket.org/jjacky/pkgclip "PkgClip @ BitBucket.org")
+- [source code & issue tracker](https://github.com/jjk-jacky/pkgclip "PkgClip @ GitHub.com")
 
 - [PKGBUILD in AUR](https://aur.archlinux.org/packages.php?ID=55870 "AUR: pkgclip")
 

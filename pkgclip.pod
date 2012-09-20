@@ -223,8 +223,8 @@ more), report it and I'll do my best to squash it.
 =head1 REPOSITORY
 
 You can find the latest source code of B<PkgClip> as well as report bugs and/or
-feature suggestions on its BitBucket repository available at
-L<https://bitbucket.org/jjacky/pkgclip>
+feature suggestions on its GitHub repository available at
+L<https://github.com/jjk-jacky/pkgclip>
 
 =head1 AUTHORS
 
