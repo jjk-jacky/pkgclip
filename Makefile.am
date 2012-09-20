@@ -20,6 +20,13 @@ nodist_dbusservice_DATA = org.jjk.PkgClip.service
 dbusconfdir = /etc/dbus-1/system.d
 dist_dbusconf_DATA = org.jjk.PkgClip.conf
 
+if USE_GIT_VERSION
+_VERSION = `git describe --abbrev=4 --dirty`
+DEFS += -DGIT_VERSION=\"$(_VERSION)\"
+else
+_VERSION = $(PACKAGE_VERSION)
+endif
+
 install-data-hook:
 	mkdir $(DESTDIR)$(docdir)/html
 	mv $(DESTDIR)$(docdir)/index.html $(DESTDIR)$(docdir)/html/
@@ -47,7 +54,7 @@ org.jjk.PkgClip.service: org.jjk.PkgClip.service.tpl
 	sed 's|@BINDIR@|$(bindir)|' org.jjk.PkgClip.service.tpl > org.jjk.PkgClip.service
 
 pkgclip.1: pkgclip.pod
-	pod2man --center='Cached Packages Trimmer Utility' --section=1 --release=$(PACKAGE_VERSION) pkgclip.pod pkgclip.1
+	pod2man --center='Cached Packages Trimmer Utility' --section=1 --release=$(_VERSION) pkgclip.pod pkgclip.1
 
 index.html: pkgclip.1
 	groff -T html -man pkgclip.1 > index.html

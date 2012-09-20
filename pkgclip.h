@@ -33,6 +33,10 @@
 #include <alpm.h>
 #include <alpm_list.h>
 
+#if defined(GIT_VERSION)
+#undef PACKAGE_VERSION
+#define PACKAGE_VERSION GIT_VERSION
+#endif
 #define PACKAGE_TAG             "Cached Packages Trimmer Utility"
 
 #define PACMAN_CONF             "/etc"
