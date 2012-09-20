@@ -231,6 +231,11 @@ clear_packages (gboolean full, pkgclip_t *pkgclip)
 static void
 refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
 {
+    if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
+    {
+        g_signal_handler_block (pkgclip->list, pkgclip->handler_pkg_info);
+        gtk_label_set_text (GTK_LABEL (pkgclip->lbl_pkg_info), NULL);
+    }
     if (!from_reloading)
     {
         set_locked (TRUE, pkgclip);
@@ -396,6 +401,10 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
         set_locked (FALSE, pkgclip);
         update_label (pkgclip);
     }
+    if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
+    {
+        g_signal_handler_unblock (pkgclip->list, pkgclip->handler_pkg_info);
+    }
 }
 
 static int
@@ -406,6 +415,11 @@ reload_list (pkgclip_t *pkgclip)
     alpm_list_t *cachedirs = alpm_option_get_cachedirs (pkgclip->handle);
     alpm_list_t *i;
     
+    if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
+    {
+        g_signal_handler_block (pkgclip->list, pkgclip->handler_pkg_info);
+        gtk_label_set_text (GTK_LABEL (pkgclip->lbl_pkg_info), NULL);
+    }
     clear_packages (TRUE, pkgclip);
     set_locked (TRUE, pkgclip);
     pkgclip->is_loading = TRUE;
@@ -507,6 +521,10 @@ reload_list (pkgclip_t *pkgclip)
     
     refresh_list (TRUE, pkgclip);
     
+    if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
+    {
+        g_signal_handler_unblock (pkgclip->list, pkgclip->handler_pkg_info);
+    }
     pkgclip->is_loading = FALSE;
     set_locked (FALSE, pkgclip);
     update_label (pkgclip);
@@ -642,6 +660,128 @@ list_query_tooltip_cb (GtkWidget *widget, gint x, gint y, gboolean keyboard _UNU
         gtk_tree_path_free (path);
     }
     return ret;
+}
+
+static void
+list_cursor_changed_cb (GtkTreeView *tree, pkgclip_t *pkgclip)
+{
+    GtkTreeModel *model;
+    GtkTreePath  *path;
+    GtkTreeIter   iter;
+    
+    gtk_tree_view_get_cursor (tree, &path, NULL);
+    if (!path)
+    {
+        return;
+    }
+    
+    model = GTK_TREE_MODEL (pkgclip->store);
+    if (gtk_tree_model_get_iter (model, &iter, path))
+    {
+        pc_pkg_t *pc_pkg;
+        alpm_list_t *i;
+        
+        gtk_tree_model_get (model, &iter, COL_PC_PKG, &pc_pkg, -1);
+        
+        if (!pkgclip->str_info)
+        {
+            pkgclip->str_info = g_string_sized_new (255);
+        }
+        i = pkgclip->pkg_info_extras;
+        g_string_printf (pkgclip->str_info, "%s", pkgclip->pkg_info);
+        g_string_truncate (pkgclip->str_info, (gsize) i->data);
+        for (i = alpm_list_next (i); i; i = alpm_list_next (i))
+        {
+            info_var_t  v = (info_var_t) i->data;
+            const char *s = NULL;
+            
+            if (v == VAR_NAME)
+            {
+                s = pc_pkg->name;
+            }
+            else if (v == VAR_DESC)
+            {
+                s = alpm_pkg_get_desc (pc_pkg->pkg);
+            }
+            else if (v == VAR_VERSION)
+            {
+                s = pc_pkg->version;
+            }
+            else if (v == VAR_FILE)
+            {
+                s = pc_pkg->file;
+            }
+            else if (v == VAR_SIZE)
+            {
+                double new_size;
+                const char *unit;
+                char buf[23];
+                
+                new_size = humanize_size (pc_pkg->filesize, '\0', &unit);
+                snprintf (buf, 23, "%.2f %s", new_size, unit);
+                s = buf;
+            }
+            else if (v == VAR_RECOMM)
+            {
+                s = recomm_label[pc_pkg->recomm];
+            }
+            else if (v == VAR_REASON)
+            {
+                int nb_old_ver, nb_old_ver_total;
+                
+                if (pc_pkg->reason == REASON_OLDER_VERSION)
+                {
+                    char buf[255];
+                    gtk_tree_model_get (model, &iter,
+                        COL_NB_OLD_VER,         &nb_old_ver,
+                        COL_NB_OLD_VER_TOTAL,   &nb_old_ver_total,
+                        -1);
+                    snprintf (buf, 255, reason_label[pc_pkg->reason], nb_old_ver, nb_old_ver_total);
+                    s = buf;
+                }
+                else if (pc_pkg->reason == REASON_ALREADY_OLDER_VERSION)
+                {
+                    char buf[255];
+                    gtk_tree_model_get (model, &iter,
+                        COL_NB_OLD_VER_TOTAL,   &nb_old_ver_total,
+                        -1);
+                    snprintf (buf, 255, reason_label[pc_pkg->reason], nb_old_ver_total,
+                        (nb_old_ver_total > 1) ? "versions" : "version");
+                    s = buf;
+                }
+                else
+                {
+                    s = reason_label[pc_pkg->reason];
+                }
+            }
+            if (s)
+            {
+                gchar *esc;
+                esc = g_markup_escape_text (s, -1);
+                g_string_append (pkgclip->str_info, esc);
+                g_free (esc);
+            }
+            
+            if ((i = alpm_list_next (i)))
+            {
+                s = i->data;
+                if ((i = alpm_list_next (i)))
+                {
+                    g_string_append_len (pkgclip->str_info,
+                                         s,
+                                         (gssize) i->data);
+                }
+                else
+                {
+                    g_string_append (pkgclip->str_info, s);
+                }
+            }
+        }
+        
+        gtk_label_set_markup (GTK_LABEL (pkgclip->lbl_pkg_info),
+                              pkgclip->str_info->str);
+    }
+    gtk_tree_path_free (path);
 }
 
 static void
@@ -955,6 +1095,10 @@ select_prev_next_marked (gboolean next, pkgclip_t *pkgclip)
             gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (pkgclip->list),
                                           path, NULL, TRUE, 0.5, 0.0);
             
+            
+            /* set cursor/focus as well, so the package info get refreshed
+             * (via list_cursor_changed_cb) */
+            gtk_tree_view_set_cursor (tree, path, NULL, FALSE);
             
             gtk_tree_path_free (path);
             goto clean;
@@ -2430,6 +2574,13 @@ main (int argc, char *argv[])
     gtk_widget_set_has_tooltip (list, TRUE);
     g_signal_connect (G_OBJECT (list), "query-tooltip",
                      G_CALLBACK (list_query_tooltip_cb), (gpointer) pkgclip);
+    /* focused cell changed */
+    if (pkgclip->show_pkg_info)
+    {
+        pkgclip->handler_pkg_info = g_signal_connect (G_OBJECT (list),
+            "cursor-changed", G_CALLBACK (list_cursor_changed_cb),
+            (gpointer) pkgclip);
+    }
     
     /* a scrolledwindow for the list */
     GtkWidget *scrolled;
@@ -2527,6 +2678,34 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (scrolled), list);
     gtk_widget_show (list);
     
+    GtkWidget *label;
+    GtkWidget *sep;
+    
+    /* sep */
+    sep = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+    pkgclip->sep_pkg_info = sep;
+    gtk_box_pack_start (GTK_BOX (vbox), sep, FALSE, FALSE, 0);
+    if (pkgclip->show_pkg_info)
+    {
+        gtk_widget_show (sep);
+    }
+    
+    /* package info */
+    label = gtk_label_new (NULL);
+    pkgclip->lbl_pkg_info = label;
+    g_object_set (label, "margin", 3, NULL);
+    gtk_misc_set_alignment (GTK_MISC (label), 0, 0.5);
+    gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
+    if (pkgclip->show_pkg_info)
+    {
+        gtk_widget_show (label);
+    }
+    
+    /* sep */
+    sep = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+    gtk_box_pack_start (GTK_BOX (vbox), sep, FALSE, FALSE, 0);
+    gtk_widget_show (sep);
+    
     /* hbox for status/info on left, buttons on right */
     GtkWidget *hbox;
     hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
@@ -2534,7 +2713,6 @@ main (int argc, char *argv[])
     gtk_widget_show (hbox);
     
     /* label */
-    GtkWidget *label;
     label = gtk_label_new ("Welcome.");
     pkgclip->label = label;
     pkgclip_label = GTK_LABEL (label);

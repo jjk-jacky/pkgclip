@@ -364,6 +364,14 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
                     setrecommoption (value, &(pkgclip->recomm[REASON_PKG_NOT_INSTALLED]));
                 }
             }
+            else if (strcmp (key, "HidePkgInfo") == 0)
+            {
+                pkgclip->show_pkg_info = FALSE;
+            }
+            else if (strcmp (key, "PkgInfo") == 0)
+            {
+                setstringoption (value, &(pkgclip->pkg_info));
+            }
         }
     }
     
@@ -546,6 +554,79 @@ parse_pacmanconf (pkgclip_t *pkgclip)
     }
 }
 
+/* takes pkgclip->pkg_info, replaces "\t" & "\n" by their corresponding characters,
+ * and sets up pkgclip->pkg_info_extras (free-ing what's in it first if needed) */
+void
+load_pkg_info (pkgclip_t *pkgclip)
+{
+    char *s, *last;
+    size_t l;
+    const char *vars[] = { "NAME",      (const char *) VAR_NAME,
+                           "DESC",      (const char *) VAR_DESC,
+                           "FILE",      (const char *) VAR_FILE,
+                           "VERSION",   (const char *) VAR_VERSION,
+                           "SIZE",      (const char *) VAR_SIZE,
+                           "RECOMM",    (const char *) VAR_RECOMM,
+                           "REASON",    (const char *) VAR_REASON,
+                           NULL };
+    
+    s = pkgclip->pkg_info;
+    l = strlen (s);
+    while ((s = strstr (s, "\\t")))
+    {
+        *s = '\t';
+        memmove (s + 1, s + 2, l - (size_t) (s - pkgclip->pkg_info) - 1);
+        --l;
+    }
+    s = pkgclip->pkg_info;
+    while ((s = strstr (s, "\\n")))
+    {
+        *s = '\n';
+        memmove (s + 1, s + 2, l - (size_t) (s - pkgclip->pkg_info) - 1);
+        --l;
+    }
+    
+    /* free things if needed */
+    alpm_list_free (pkgclip->pkg_info_extras);
+    pkgclip->pkg_info_extras = NULL;
+    
+    s = pkgclip->pkg_info;
+    last = s;
+    while ((s = strchr (s, '$')))
+    {
+        const char **v = vars;
+        
+        while (*v)
+        {
+            l = strlen (*v);
+            if (strncmp (s + 1, *v, l) == 0)
+            {
+                pkgclip->pkg_info_extras = alpm_list_add (pkgclip->pkg_info_extras,
+                                                          (void *) (s - last));
+                pkgclip->pkg_info_extras = alpm_list_add (pkgclip->pkg_info_extras,
+                                                          (void *) *(v + 1));
+                s += l + 1;
+                last = s;
+                v = NULL;
+                break;
+            }
+            v += 2;
+        }
+        if (v && !*v)
+        {
+            /* did not find a match, moving forward leaving this untouched */
+            ++s;
+            continue;
+        }
+        
+        if (*s)
+        {
+            pkgclip->pkg_info_extras = alpm_list_add (pkgclip->pkg_info_extras,
+                                                      s);
+        }
+    }
+}
+
 pkgclip_t *
 new_pkgclip (void)
 {
@@ -564,6 +645,8 @@ new_pkgclip (void)
     pkgclip->recomm[REASON_AS_INSTALLED] = pkgclip->recomm[REASON_INSTALLED];
     pkgclip->nb_old_ver = 1;
     pkgclip->nb_old_ver_ai = 0;
+    pkgclip->show_pkg_info = TRUE;
+    pkgclip->pkg_info = strdup ("<b>$NAME</b> $VERSION\\t<i>$FILE ($SIZE)</i>\\n$DESC\\n$REASON: $RECOMM");
     
     /* parse config file, if any */
     char file[PATH_MAX];
@@ -572,6 +655,9 @@ new_pkgclip (void)
 
     /* parse pacman.conf */
     parse_pacmanconf (pkgclip);
+    
+    /* prepare package info */
+    load_pkg_info (pkgclip);
     
     return pkgclip;
 }
@@ -748,6 +834,12 @@ free_pkgclip (pkgclip_t *pkgclip)
     if (NULL == pkgclip->cachedirs)
     {
         FREELIST (pkgclip->cachedirs);
+    }
+    free (pkgclip->pkg_info);
+    alpm_list_free (pkgclip->pkg_info_extras);
+    if (pkgclip->str_info)
+    {
+        g_string_free (pkgclip->str_info, TRUE);
     }
     free (pkgclip);
 }

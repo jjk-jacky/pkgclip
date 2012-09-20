@@ -113,6 +113,16 @@ typedef struct _prefs_win_t {
     GtkWidget    *entry_ai;
 } prefs_win_t;
 
+typedef enum {
+    VAR_NAME,
+    VAR_DESC,
+    VAR_VERSION,
+    VAR_FILE,
+    VAR_SIZE,
+    VAR_RECOMM,
+    VAR_REASON,
+} info_var_t;
+
 typedef struct _pkgclip_t {
     /* config */
     char            *pacmanconf;
@@ -126,6 +136,9 @@ typedef struct _pkgclip_t {
     int              nb_old_ver;
     alpm_list_t     *as_installed;
     int              nb_old_ver_ai;
+    gboolean         show_pkg_info;
+    char            *pkg_info;
+    alpm_list_t     *pkg_info_extras;
     
     /* app/gui */
     gboolean         in_gtk_main;
@@ -139,6 +152,11 @@ typedef struct _pkgclip_t {
     GtkWidget       *mnu_reload;
     GtkWidget       *mnu_remove;
     GtkWidget       *mnu_edit;
+    GtkWidget       *sep_pkg_info;
+    GtkWidget       *lbl_pkg_info;
+    
+    gulong           handler_pkg_info;
+    GString         *str_info;
     
     prefs_win_t     *prefs;
     

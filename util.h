@@ -31,6 +31,7 @@ gboolean confirm (const gchar *message, const gchar *submessage,
                   const gchar *btn_no_label, const gchar *btn_no_image,
                   pkgclip_t *pkgclip);
 void parse_pacmanconf (pkgclip_t *pkgclip);
+void load_pkg_info (pkgclip_t *pkgclip);
 pkgclip_t * new_pkgclip (void);
 gboolean save_config (pkgclip_t *pkgclip);
 void free_pkgclip (pkgclip_t *pkgclip);
