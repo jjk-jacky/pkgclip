@@ -601,6 +601,11 @@ list_query_tooltip_cb (GtkWidget *widget, gint x, gint y, gboolean keyboard _UNU
             switch (col)
             {
                 case COL_PACKAGE:
+                    gtk_tree_model_get (model, &iter, COL_PC_PKG, &pc_pkg, -1);
+                    gtk_tooltip_set_text (tooltip, alpm_pkg_get_desc (pc_pkg->pkg));
+                    ret = TRUE;
+                    break;
+                
                 case COL_VERSION:
                     gtk_tree_model_get (model, &iter, COL_PC_PKG, &pc_pkg, -1);
                     gtk_tooltip_set_text (tooltip, pc_pkg->file);
