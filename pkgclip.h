@@ -107,10 +107,14 @@ typedef struct _prefs_win_t {
     GtkWidget    *chk_old_pkgrel;
     GtkWidget    *chk_sane_sort_indicator;
     GtkWidget    *chk_autoload;
+    GtkWidget    *chk_show_pkg_info;
+    GtkWidget    *entry_pkg_info;
     GtkTreeView  *tree_ai;
     GtkTreeModel *model_ai;
     gboolean      ai_updated;
     GtkWidget    *entry_ai;
+    
+    char         *pkg_info;
 } prefs_win_t;
 
 typedef enum {

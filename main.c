@@ -1546,6 +1546,72 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
             needs_save = TRUE;
         }
         
+        is_on = gtk_toggle_button_get_active (
+            GTK_TOGGLE_BUTTON (pkgclip->prefs->chk_show_pkg_info));
+        if (is_on != pkgclip->show_pkg_info)
+        {
+            pkgclip->show_pkg_info = is_on;
+            needs_save = TRUE;
+            /* GUI update */
+            if (pkgclip->show_pkg_info)
+            {
+                pkgclip->handler_pkg_info = g_signal_connect (G_OBJECT (pkgclip->list),
+                    "cursor-changed", G_CALLBACK (list_cursor_changed_cb),
+                    (gpointer) pkgclip);
+                gtk_widget_show (pkgclip->sep_pkg_info);
+                gtk_widget_show (pkgclip->lbl_pkg_info);
+                
+                /* "refocus" the focused item to trigger the callback and
+                 * fill/refresh the info */
+                GtkTreePath *path;
+                gtk_tree_view_get_cursor (GTK_TREE_VIEW (pkgclip->list),
+                                          &path,
+                                          NULL);
+                gtk_tree_view_set_cursor (GTK_TREE_VIEW (pkgclip->list),
+                                          path,
+                                          NULL,
+                                          FALSE);
+                gtk_tree_path_free (path);
+            }
+            else
+            {
+                g_signal_handler_disconnect (G_OBJECT (pkgclip->list), pkgclip->handler_pkg_info);
+                pkgclip->handler_pkg_info = 0;
+                gtk_widget_hide (pkgclip->sep_pkg_info);
+                gtk_widget_hide (pkgclip->lbl_pkg_info);
+            }
+        }
+        
+        s = (gchar *) gtk_entry_get_text (GTK_ENTRY (pkgclip->prefs->entry_pkg_info));
+        if (*s == '\0')
+        {
+            /* empty string to revert back to default */
+            s = (char *) PKG_INFO_TPL;
+        }
+        if (strcmp (pkgclip->prefs->pkg_info, s) != 0)
+        {
+            free (pkgclip->pkg_info);
+            pkgclip->pkg_info = strdup (s);
+            load_pkg_info (pkgclip);
+            needs_save = TRUE;
+            /* this MUST be after show_pkg_info, so is_on still applies to it,
+             * and we can determine whether the setting was changed or not */
+            if (pkgclip->show_pkg_info && is_on == pkgclip->show_pkg_info)
+            {
+                /* we show info, and that's not new. but we changed the tpl, so
+                 * let's force a refresh */
+                GtkTreePath *path;
+                gtk_tree_view_get_cursor (GTK_TREE_VIEW (pkgclip->list),
+                                          &path,
+                                          NULL);
+                gtk_tree_view_set_cursor (GTK_TREE_VIEW (pkgclip->list),
+                                          path,
+                                          NULL,
+                                          FALSE);
+                gtk_tree_path_free (path);
+            }
+        }
+        
         if (pkgclip->prefs->ai_updated)
         {
             FREELIST (pkgclip->as_installed);
@@ -1696,6 +1762,7 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
 static void
 prefs_destroy_cb (GtkWidget *window _UNUSED_, pkgclip_t *pkgclip)
 {
+    free (pkgclip->prefs->pkg_info);
     free (pkgclip->prefs);
     pkgclip->prefs = NULL;
 }
@@ -1904,6 +1971,34 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_set_tooltip_text (check, "You will have to manually load packages (using menu \"Reload packages\")");
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), !pkgclip->autoload);
     gtk_widget_show (check);
+    
+    /* show package info */
+    check = gtk_check_button_new_with_label ("Show package information. \t Template:");
+    pkgclip->prefs->chk_show_pkg_info = check;
+    gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
+    gtk_widget_set_margin_left (check, 23);
+    gtk_widget_set_tooltip_text (check, "Show package information panel at the bottom");
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->show_pkg_info);
+    gtk_widget_show (check);
+    
+    /* package info */
+    entry = gtk_entry_new ();
+    pkgclip->prefs->entry_pkg_info = entry;
+    pkgclip->prefs->pkg_info = get_tpl_pkg_info (pkgclip);
+    gtk_entry_set_text (GTK_ENTRY (entry), pkgclip->prefs->pkg_info);
+    gtk_grid_attach (GTK_GRID (grid), entry, 0, top++, 2, 1);
+    gtk_widget_set_tooltip_markup (entry,
+        "You can use Pango markup language for formatting, as well as the following variables:"
+        "\n<b>$NAME</b>\t\tPackage name"
+        "\n<b>$DESC</b>\t\tPackage description"
+        "\n<b>$VERSION</b>\tPackage version"
+        "\n<b>$FILE</b>\t\tPath/to/package/file"
+        "\n<b>$SIZE</b>\t\tPackage file size"
+        "\n<b>$RECOMM</b>\tRecommendation"
+        "\n<b>$REASON</b>\tReason for the recommendation"
+        "\n\n\t<i>(Leave empty to restore default value.)</i>"
+        );
+    gtk_widget_show (entry);
     
     /* ** As Installed ** */
     GtkWidget *expander;

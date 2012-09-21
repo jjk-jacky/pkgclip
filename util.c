@@ -35,6 +35,7 @@
 #include "pkgclip.h"
 #include "util.h"
 
+
 static void setrepeatingoption (char *ptr, alpm_list_t **list);
 static void parse_config_file (const char *file, gboolean is_pacman, int depth,
     pkgclip_t *pkgclip);
@@ -554,6 +555,50 @@ parse_pacmanconf (pkgclip_t *pkgclip)
     }
 }
 
+/* returns the template string (to be shown/saved) with '\t' and '\n' "escaped"
+ * in a new string, to be free()-d */
+char *
+get_tpl_pkg_info (pkgclip_t *pkgclip)
+{
+    char *tpl, *s, *d;
+    size_t len, alloc;
+    
+    alloc = strlen (pkgclip->pkg_info) + 23;
+    tpl = malloc (sizeof (*tpl) * (alloc + 1));
+    s = pkgclip->pkg_info;
+    d = tpl;
+    len = 0;
+    for ( ; ; ++s, ++d)
+    {
+        if (++len >= alloc)
+        {
+            alloc += 23;
+            tpl = realloc (tpl, sizeof (*tpl) * (alloc + 1));
+        }
+        
+        if (*s == '\t')
+        {
+            *d++ = '\\';
+            *d = 't';
+        }
+        else if (*s == '\n')
+        {
+            *d++ = '\\';
+            *d = 'n';
+        }
+        else
+        {
+            *d = *s;
+        }
+        if (*s == '\0')
+        {
+            break;
+        }
+    }
+    
+    return tpl;
+}
+
 /* takes pkgclip->pkg_info, replaces "\t" & "\n" by their corresponding characters,
  * and sets up pkgclip->pkg_info_extras (free-ing what's in it first if needed) */
 void
@@ -646,7 +691,7 @@ new_pkgclip (void)
     pkgclip->nb_old_ver = 1;
     pkgclip->nb_old_ver_ai = 0;
     pkgclip->show_pkg_info = TRUE;
-    pkgclip->pkg_info = strdup ("<b>$NAME</b> $VERSION\\t<i>$FILE ($SIZE)</i>\\n$DESC\\n$REASON: $RECOMM");
+    pkgclip->pkg_info = strdup (PKG_INFO_TPL);
     
     /* parse config file, if any */
     char file[PATH_MAX];
@@ -730,6 +775,32 @@ save_config (pkgclip_t *pkgclip)
             goto err_save;
         }
     }
+    
+    if (!pkgclip->show_pkg_info)
+    {
+        if (EOF == fputs ("HidePkgInfo\n", fp))
+        {
+            goto err_save;
+        }
+    }
+    
+    s = get_tpl_pkg_info (pkgclip);
+    if (strcmp (s, PKG_INFO_TPL) != 0)
+    {
+        if (EOF == fputs ("PkgInfo = \"", fp))
+        {
+            goto err_save;
+        }
+        if (EOF == fputs (s, fp))
+        {
+            goto err_save;
+        }
+        if (EOF == fputs ("\"\n", fp))
+        {
+            goto err_save;
+        }
+    }
+    free (s);
     
     buf[0] = '\0';
     s = buf;
