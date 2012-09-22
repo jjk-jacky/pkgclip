@@ -216,15 +216,15 @@ update_label (pkgclip_t *pkgclip)
 static void
 clear_packages (gboolean full, pkgclip_t *pkgclip)
 {
+    pkgclip->marked_packages = 0;
+    pkgclip->marked_size = 0;
+    gtk_list_store_clear (pkgclip->store);
     if (full)
     {
         FREEPCPKGLIST (pkgclip->packages);
         pkgclip->total_packages = 0;
         pkgclip->total_size = 0;
     }
-    pkgclip->marked_packages = 0;
-    pkgclip->marked_size = 0;
-    gtk_list_store_clear (pkgclip->store);
     update_label (pkgclip);
 }
 
