@@ -140,6 +140,40 @@ By default PkgClip automatically scans your cache directories and loads packages
 upon start. Should you not want that to happen, this will help you achieve your
 goal.
 
+=item I<Show package information>
+
+When enabled, an additional panel will be displayed at the bottom of the window,
+with information about the currently focused package. What is displayed is based
+on the template specified below.
+
+=item I<Template>
+
+You can define the template to display package information in the extra panel.
+Pango markup language is supported, allowing you to use some formatting (bold,
+colors, etc). For a description of the supported syntax, refer to L<http://developer.gnome.org/pango/stable/PangoMarkupFormat.html>
+
+The following variables can be used :
+
+=over
+
+=item - B<$NAME> : Package name
+
+=item - B<$DESC> : Package description
+
+=item - B<$VERSION> : Package version
+
+=item - B<$FILE> : Full path/name of the package file
+
+=item - B<$SIZE> : Size of the package file
+
+=item - B<$RECOMM> : Recommendation (Keep/Remove)
+
+=item - B<$REASON> : Reason for the recommendation
+
+=back
+
+If you leave this field empty and press OK, the default value will be restored.
+
 =item I<Packages to treat as if they were installed>
 
 You can list here packages for which, if no version is currently installed,
