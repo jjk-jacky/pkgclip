@@ -42,21 +42,25 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memmove memset strchr strdup strerror strrchr])
 
 # git version
-AC_MSG_CHECKING([whether to use git version if available])
+AC_MSG_CHECKING([if git version must be used])
 if test "x$wantgitver" = "xyes"; then
+	AC_MSG_RESULT([yes])
 	AC_CHECK_PROGS([GIT], [git])
+	if test "x$GIT" = "x"; then
+		AC_MSG_ERROR([Cannot use git version: git not found])
+	fi
 	AC_CHECK_FILE([.git/], hasgitdir=yes)
-	if test $GIT -a "x$hasgitdir" = "xyes"; then
-		AC_MSG_RESULT([yes])
-		usegitver=yes
+	if test "x$hasgitdir" = "xyes"; then
 		AC_DEFINE([USE_GIT_VERSION], , [Use GIT version])
+		usegitver=yes
+		gitver=-git
 	else
-		AC_MSG_RESULT([no, git or .git dir missing])
-		usegitver=no
+		AC_MSG_ERROR([Cannot use git version: .git not found])
 	fi
 else
-	AC_MSG_RESULT([no, disabled])
+	AC_MSG_RESULT([no])
 	usegitver=no
+	gitver=
 fi
 AM_CONDITIONAL(USE_GIT_VERSION, test "x$usegitver" = "xyes")
 
@@ -64,7 +68,7 @@ AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
 echo "
-        ${PACKAGE} version ${PACKAGE_VERSION}
+        ${PACKAGE} version ${PACKAGE_VERSION}${gitver}
 
  Build information:
    source code location         : ${srcdir}
