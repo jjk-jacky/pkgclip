@@ -1,4 +1,25 @@
 
+# 10/27/2012; v1.1.0
+
+- Use package description as tooltip for the Package column
+
+- Add a panel to show info about the focused item
+
+Info on panel can be defined through config option PkgInfo. Markup syntax is
+supported for formatting, as well as the following variables: $NAME, $DESC,
+$VERSION, $FILE, $SIZE, $RECOMM and $REASON
+
+- Update polkit policy: use auth_admin for all, add message & icon
+
+- pkgclip's source code moved from a mercurial repo
+(https://bitbucket.org/jjacky/pkgclip) to a git one
+(https://github.com/jjk-jacky/pkgclip)
+
+- Add option --enable-git-version to configure. When enabled, the version used
+in pkgclip (and man page) will come from `git describe` ran at compile/make
+time.
+
+
 # 06/26/2012; v1.0.1
 
 - A little bug in the display of the list of packages was fixed. It seems to sometimes (on
