@@ -1,5 +1,5 @@
 
-CLEANFILES = index.html org.jjk.PkgClip.service
+CLEANFILES = pkgclip.1 index.html org.jjk.PkgClip.service
 
 bin_PROGRAMS = pkgclip pkgclip-dbus
 
