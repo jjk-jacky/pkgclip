@@ -28,12 +28,12 @@ _VERSION = $(PACKAGE_VERSION)
 endif
 
 install-data-hook:
-	mkdir $(DESTDIR)$(docdir)/html
-	mv $(DESTDIR)$(docdir)/index.html $(DESTDIR)$(docdir)/html/
+	mkdir "$(DESTDIR)$(docdir)/html"
+	mv "$(DESTDIR)$(docdir)/index.html" "$(DESTDIR)$(docdir)/html/"
 
 dist-hook:
-	cp $(srcdir)/pkgclip.pod $(distdir)/
-	cp $(srcdir)/org.jjk.PkgClip.service.tpl $(distdir)/
+	cp "$(srcdir)/pkgclip.pod" "$(distdir)/"
+	cp "$(srcdir)/org.jjk.PkgClip.service.tpl" "$(distdir)/"
 
 AM_CFLAGS = -g \
                 -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
