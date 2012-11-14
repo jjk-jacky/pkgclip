@@ -247,7 +247,7 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
     
     GtkTreeIter iter;
     alpm_list_t *i;
-    alpm_db_t *db_local = alpm_option_get_localdb (pkgclip->handle);
+    alpm_db_t *db_local = alpm_get_localdb (pkgclip->handle);
     const char *last_pkg = NULL;
     const char *inst_ver = NULL;
     int old_ver, nb_old_ver;
