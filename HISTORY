@@ -1,5 +1,10 @@
 
-# 10/27/2012; v1.1.0
+# 2013-04-05; v1.2.0
+
+- Compatibility with API changes of pacman 4.1
+
+
+# 2012-10-27; v1.1.0
 
 - Use package description as tooltip for the Package column
 
@@ -20,14 +25,14 @@ in pkgclip (and man page) will come from `git describe` ran at compile/make
 time.
 
 
-# 06/26/2012; v1.0.1
+# 2012-06-26; v1.0.1
 
 - A little bug in the display of the list of packages was fixed. It seems to sometimes (on
 32bits system only?) lead to a crash of PkgClip right after info about all packages have
 been loaded (from pacman's cache); which by default was done on application's start.
 
 
-# 05/10/2012; v1.0.0
+# 2012-05-10; v1.0.0
 
 - Added buttons to "Select previous/next marked package" to allow quick & easy
 review of marked packages
@@ -45,7 +50,7 @@ list only, tooltips & total were correct), fixed
 - Bumped to 1.0.0 to follow semantic versioning
 
 
-# 02/07/2012; v0.1.2
+# 2012-02-07; v0.1.2
 
 - Added "As Installed" list, to treat packages as if they were installed.
 
@@ -60,11 +65,11 @@ they're needed on occasion (e.g. to compile something...)
 on "As Installed" list.
 
 
-# 01/18/2012; v0.1.1
+# 2012-01-18; v0.1.1
 
 - Refresh reasons after removing files
 
 
-# 01/17/2012, v0.1.0
+# 2012-01-17, v0.1.0
 
 - first release
