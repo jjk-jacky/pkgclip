@@ -1,4 +1,12 @@
 
+# 2013-05-12; v1.2.1
+
+- Loading packages is now done in a separate thread, so it should be/feel faster
+
+- Remove option "sane sort indicator" (See GTK's own gtk-alternative-sort-arrows
+instead)
+
+
 # 2013-04-05; v1.2.0
 
 - Compatibility with API changes of pacman 4.1

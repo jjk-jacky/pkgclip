@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([PkgClip], [1.2.0], [i.am.jack.mail@gmail.com])
+AC_INIT([PkgClip], [1.2.1], [i.am.jack.mail@gmail.com])
 AC_CONFIG_SRCDIR([main.c])
 AC_CONFIG_HEADERS([config.h])
 
