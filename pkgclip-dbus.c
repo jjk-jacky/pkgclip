@@ -1,9 +1,9 @@
 /**
- * PkgClip - Copyright (C) 2012 Olivier Brunel
+ * PkgClip - Copyright (C) 2012-2013 Olivier Brunel
  *
  * pkgclip-dbus.c
  * Copyright (C) 2012 Olivier Brunel <i.am.jack.mail@gmail.com>
- * 
+ *
  * This file is part of PkgClip.
  *
  * PkgClip is free software: you can redistribute it and/or modify it under the
@@ -34,7 +34,7 @@
 /* gio - for dbus */
 #include <gio/gio.h>
 
-#define _UNUSED_                __attribute__ ((unused)) 
+#define _UNUSED_                __attribute__ ((unused))
 
 static GDBusNodeInfo *introspection_data = NULL;
 
@@ -70,10 +70,8 @@ handle_method_call (GDBusConnection       *connection,
 {
     /* only one method we support */
     if (g_strcmp0 (method_name, "RemovePackages") != 0)
-    {
         return;
-    }
-    
+
     /* first off, check auth */
     GError *error = NULL;
     PolkitAuthority *authority;
@@ -83,13 +81,13 @@ handle_method_call (GDBusConnection       *connection,
     authority = polkit_authority_get_sync (NULL, NULL);
     subject = polkit_system_bus_name_new (sender);
     result = polkit_authority_check_authorization_sync (
-                authority,
-                subject, 
-                "org.jjk.pkgclip.removepkgs",
-                NULL,
-                POLKIT_CHECK_AUTHORIZATION_FLAGS_ALLOW_USER_INTERACTION,
-                NULL,
-                &error);
+            authority,
+            subject, 
+            "org.jjk.pkgclip.removepkgs",
+            NULL,
+            POLKIT_CHECK_AUTHORIZATION_FLAGS_ALLOW_USER_INTERACTION,
+            NULL,
+            &error);
     if (result == NULL)
     {
         g_dbus_method_invocation_return_gerror (invocation, error);
@@ -99,18 +97,18 @@ handle_method_call (GDBusConnection       *connection,
     {
         g_object_unref (result);
         g_dbus_method_invocation_return_dbus_error (
-            invocation,
-            "org.jjk.PkgClip.AuthError",
-            "Authorization from PolicyKit failed");
+                invocation,
+                "org.jjk.PkgClip.AuthError",
+                "Authorization from PolicyKit failed");
         return;
     }
     g_object_unref (result);
-    
+
     /* ok, now do the work */
     GVariantIter *iter;
     const gchar *pkg;
     guint processed = 0;
-    
+
     g_variant_get (parameters, "(as)", &iter);
     while (g_variant_iter_loop (iter, "s", &pkg))
     {
@@ -118,30 +116,30 @@ handle_method_call (GDBusConnection       *connection,
         if (unlink (pkg) == 0)
         {
             g_dbus_connection_emit_signal (connection,
-                                           sender,
-                                           object_path,
-                                           interface_name,
-                                           "RemoveSuccess",
-                                           g_variant_new ("(s)", pkg),
-                                           &error);
+                    sender,
+                    object_path,
+                    interface_name,
+                    "RemoveSuccess",
+                    g_variant_new ("(s)", pkg),
+                    &error);
             g_assert_no_error (error);
         }
         else
         {
             g_dbus_connection_emit_signal (connection,
-                                           sender,
-                                           object_path,
-                                           interface_name,
-                                           "RemoveFailure",
-                                           g_variant_new ("(ss)", pkg, strerror (errno)),
-                                           &error);
+                    sender,
+                    object_path,
+                    interface_name,
+                    "RemoveFailure",
+                    g_variant_new ("(ss)", pkg, strerror (errno)),
+                    &error);
             g_assert_no_error (error);
         }
     }
     g_variant_iter_free (iter);
-    
+
     g_dbus_method_invocation_return_value (invocation,
-                                           g_variant_new ("(i)", processed));
+            g_variant_new ("(i)", processed));
     /* we have no reason to keep running at this point */
     g_main_loop_quit (loop);
 }
@@ -157,13 +155,13 @@ on_bus_acquired (GDBusConnection *connection,
     interface_vtable.method_call  = handle_method_call;
 
     registration_id = g_dbus_connection_register_object (
-                        connection,
-                        "/org/jjk/PkgClip/Clipper",
-                        introspection_data->interfaces[0],
-                        &interface_vtable,
-                        NULL,
-                        NULL,
-                        NULL);
+            connection,
+            "/org/jjk/PkgClip/Clipper",
+            introspection_data->interfaces[0],
+            &interface_vtable,
+            NULL,
+            NULL,
+            NULL);
     g_assert (registration_id > 0);
 }
 
@@ -182,7 +180,6 @@ on_name_lost (GDBusConnection *connection _UNUSED_,
 {
   g_main_loop_quit (loop);
 }
-
 
 int
 main (int argc _UNUSED_, char *argv[] _UNUSED_)
@@ -214,4 +211,3 @@ main (int argc _UNUSED_, char *argv[] _UNUSED_)
   g_dbus_node_info_unref (introspection_data);
   return 0;
 }
-

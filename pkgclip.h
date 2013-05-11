@@ -94,7 +94,7 @@ typedef struct _progress_win_t {
     off_t        success_size;
     unsigned int error_packages;
     off_t        error_size;
-    
+
     char        *error_messages;
     unsigned int em_alloc;
     unsigned int em_len;
@@ -113,7 +113,7 @@ typedef struct _prefs_win_t {
     GtkTreeModel *model_ai;
     gboolean      ai_updated;
     GtkWidget    *entry_ai;
-    
+
     char         *pkg_info;
 } prefs_win_t;
 
@@ -143,7 +143,7 @@ typedef struct _pkgclip_t {
     gboolean         show_pkg_info;
     char            *pkg_info;
     alpm_list_t     *pkg_info_extras;
-    
+
     /* app/gui */
     gboolean         in_gtk_main;
     gboolean         is_loading;
@@ -158,23 +158,23 @@ typedef struct _pkgclip_t {
     GtkWidget       *mnu_edit;
     GtkWidget       *sep_pkg_info;
     GtkWidget       *lbl_pkg_info;
-    
+
     gulong           handler_pkg_info;
     GString         *str_info;
-    
+
     prefs_win_t     *prefs;
-    
+
     alpm_handle_t   *handle;
     alpm_list_t     *packages;
-    
+
     unsigned int     total_packages;
     off_t            total_size;
     unsigned int     marked_packages;
     off_t            marked_size;
-    
+
     gboolean         locked;
     progress_win_t  *progress_win;
-    
+
     GDBusProxy      *proxy;
 } pkgclip_t;
 
