@@ -3,11 +3,13 @@
 
 AC_PREREQ([2.69])
 AC_INIT([PkgClip], [1.2.0], [i.am.jack.mail@gmail.com])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([main.c])
 AC_CONFIG_HEADERS([config.h])
 
 AC_SYS_LARGEFILE
+
+AM_INIT_AUTOMAKE([-Wall -Werror foreign silent-rules])
+AM_SILENT_RULES([yes])
 
 # Checks for programs.
 AC_PROG_CC_C99
