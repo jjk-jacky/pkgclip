@@ -814,8 +814,7 @@ show_results (guint processed _UNUSED_, pkgclip_t *pkgclip)
         label = gtk_label_new (NULL);
         gtk_label_set_markup (GTK_LABEL (label), pkgclip->progress_win->error_messages);
         gtk_label_set_selectable (GTK_LABEL (label), TRUE);
-        gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scrolled),
-                label);
+        gtk_container_add (GTK_CONTAINER (scrolled), label);
         gtk_widget_show (label);
     }
 
