@@ -505,16 +505,6 @@ list_sort_package (GtkTreeModel *model, GtkTreeIter *iter1, GtkTreeIter *iter2,
 }
 
 static void
-column_clicked_cb (GtkTreeViewColumn *column, pkgclip_t *pkgclip)
-{
-    if (pkgclip->sane_sort_indicator)
-        /* reverse the sort indicator, because when DESCending we should point to
-         * the bottom, not the top; and vice versa */
-        gtk_tree_view_column_set_sort_order (column,
-                !gtk_tree_view_column_get_sort_order (column));
-}
-
-static void
 renderer_toggle_cb (GtkCellRendererToggle *renderer _UNUSED_, gchar *path, pkgclip_t *pkgclip)
 {
     GtkTreeModel *store = GTK_TREE_MODEL (pkgclip->store);
@@ -1545,46 +1535,6 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
         needs_reload = TRUE;
     }
 
-    if (btn_id == 1)
-        is_on = gtk_toggle_button_get_active (
-                GTK_TOGGLE_BUTTON (pkgclip->prefs->chk_sane_sort_indicator));
-    else
-        is_on = FALSE;
-    if (is_on != pkgclip->sane_sort_indicator)
-    {
-        pkgclip->sane_sort_indicator = is_on;
-        /* so we need to adjust it */
-        /* okay, so i don't know how to get the GtkTreeViewColumn currently
-         * sorted. we can get the column_id of the sorted column from the
-         * model, but no way to link it to a column on the treeview.
-         * So, we'll get that column id, and that go through each column on
-         * the TV, since we actually added its linked column-id as data */
-        GtkTreeViewColumn *column;
-        gint c, col;
-        GtkSortType order;
-        gtk_tree_sortable_get_sort_column_id (GTK_TREE_SORTABLE (pkgclip->store),
-                &c, &order);
-        for (i = 0; 1; ++i)
-        {
-            /* get column */
-            column = gtk_tree_view_get_column (GTK_TREE_VIEW (pkgclip->list), i);
-            /* since we're always sorted, this should never happen */
-            if (NULL == column)
-                break;
-            /* grab associated col-id */
-            col = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (column), "col-id"));
-            /* is it the one we want? */
-            if (col == c)
-            {
-                /* reverse the indicator */
-                gtk_tree_view_column_set_sort_order (column,
-                        !gtk_tree_view_column_get_sort_order (column));
-                break;
-            }
-        }
-        needs_save = TRUE;
-    }
-
     /* reload/refresh */
     if (needs_reload)
     {
@@ -1639,25 +1589,6 @@ prefs_destroy_cb (GtkWidget *window _UNUSED_, pkgclip_t *pkgclip)
     free (pkgclip->prefs->pkg_info);
     free (pkgclip->prefs);
     pkgclip->prefs = NULL;
-}
-
-static void
-prefs_column_clicked_cb (GtkTreeViewColumn *column, GtkToggleButton *button)
-{
-    if (gtk_toggle_button_get_active (button))
-        /* reverse the sort indicator, because when DESCending we should point to
-         * the bottom, not the top; and vice versa */
-        gtk_tree_view_column_set_sort_order (column,
-                !gtk_tree_view_column_get_sort_order (column));
-}
-
-static void
-prefs_sane_toggled_cb (GtkToggleButton *button _UNUSED_, GtkTreeViewColumn *column)
-{
-    /* reverse the sort indicator, because when DESCending we should point to
-     * the bottom, not the top; and vice versa */
-    gtk_tree_view_column_set_sort_order (column,
-            !gtk_tree_view_column_get_sort_order (column));
 }
 
 static void
@@ -1820,15 +1751,6 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->old_pkgrel);
     gtk_widget_show (check);
 
-    /* sane sort indicator */
-    check = gtk_check_button_new_with_label ("Use sane sort indicator");
-    pkgclip->prefs->chk_sane_sort_indicator = check;
-    gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
-    gtk_widget_set_margin_left (check, 23);
-    gtk_widget_set_tooltip_text (check, "So when sorted descendingly, the arrow points down...");
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->sane_sort_indicator);
-    gtk_widget_show (check);
-
     /* autoload -- WARNING: the check is the OPPOSITE of the option... */
     check = gtk_check_button_new_with_label ("Do not load packages on start");
     pkgclip->prefs->chk_autoload = check;
@@ -1952,17 +1874,9 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
             "text", 0,
             NULL);
     gtk_tree_view_column_set_sort_column_id (column, 0);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (prefs_column_clicked_cb),
-            (gpointer) pkgclip->prefs->chk_sane_sort_indicator);
     gtk_tree_view_append_column (GTK_TREE_VIEW (list), column);
 
     /* eo.columns  */
-
-    /* attach a callback for the sane sort order toggle button now, so we can
-     * have a pointer to column as user data */
-    g_signal_connect (G_OBJECT (pkgclip->prefs->chk_sane_sort_indicator), "toggled",
-            G_CALLBACK (prefs_sane_toggled_cb), (gpointer) column);
 
     /* fill data */
     GtkTreeIter iter;
@@ -2554,8 +2468,6 @@ main (int argc, char *argv[])
             NULL);
     g_object_set_data (G_OBJECT (column), "col-id", (gpointer) COL_PACKAGE);
     gtk_tree_view_column_set_sort_column_id (column, COL_PACKAGE);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     gtk_tree_view_column_set_resizable (column, TRUE);
     gtk_tree_view_append_column (GTK_TREE_VIEW (list), column);
     /* since we add items sorted, let's show it */
@@ -2568,8 +2480,6 @@ main (int argc, char *argv[])
             NULL);
     g_object_set_data (G_OBJECT (column), "col-id", (gpointer) COL_VERSION);
     gtk_tree_view_column_set_sort_column_id (column, COL_VERSION);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     gtk_tree_view_column_set_resizable (column, TRUE);
     gtk_tree_view_append_column (GTK_TREE_VIEW (list), column);
     /* column: Remove */
@@ -2580,8 +2490,6 @@ main (int argc, char *argv[])
             NULL);
     g_object_set_data (G_OBJECT (column), "col-id", (gpointer) COL_REMOVE);
     gtk_tree_view_column_set_sort_column_id (column, COL_REMOVE);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     g_object_set (tgl_renderer, "activatable", TRUE, "active", FALSE, NULL);
     g_signal_connect (G_OBJECT (tgl_renderer), "toggled",
             G_CALLBACK (renderer_toggle_cb), (gpointer) pkgclip);
@@ -2593,8 +2501,6 @@ main (int argc, char *argv[])
             NULL);
     g_object_set_data (G_OBJECT (column), "col-id", (gpointer) COL_SIZE);
     gtk_tree_view_column_set_sort_column_id (column, COL_SIZE);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     gtk_tree_view_column_set_cell_data_func (column, renderer,
             (GtkTreeCellDataFunc) rend_size, (gpointer) COL_SIZE, NULL);
     gtk_tree_view_column_set_resizable (column, TRUE);
@@ -2606,8 +2512,6 @@ main (int argc, char *argv[])
             NULL);
     g_object_set_data (G_OBJECT (column), "col-id", (gpointer) COL_RECOMM);
     gtk_tree_view_column_set_sort_column_id (column, COL_RECOMM);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     gtk_tree_view_column_set_cell_data_func (column, renderer,
             (GtkTreeCellDataFunc) rend_recomm, NULL, NULL);
     gtk_tree_view_column_set_resizable (column, TRUE);
@@ -2619,8 +2523,6 @@ main (int argc, char *argv[])
             NULL);
     g_object_set_data (G_OBJECT (column), "col-id", (gpointer) COL_REASON);
     gtk_tree_view_column_set_sort_column_id (column, COL_REASON);
-    g_signal_connect (G_OBJECT (column), "clicked",
-            G_CALLBACK (column_clicked_cb), (gpointer) pkgclip);
     gtk_tree_view_column_set_cell_data_func (column, renderer,
             (GtkTreeCellDataFunc) rend_reason, NULL, NULL);
     gtk_tree_view_column_set_resizable (column, TRUE);

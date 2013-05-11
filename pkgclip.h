@@ -105,7 +105,6 @@ typedef struct _prefs_win_t {
     GtkWidget    *filechooser;
     GtkWidget    *entry;
     GtkWidget    *chk_old_pkgrel;
-    GtkWidget    *chk_sane_sort_indicator;
     GtkWidget    *chk_autoload;
     GtkWidget    *chk_show_pkg_info;
     GtkWidget    *entry_pkg_info;
@@ -133,7 +132,6 @@ typedef struct _pkgclip_t {
     char            *dbpath;
     char            *rootpath;
     alpm_list_t     *cachedirs;
-    gboolean         sane_sort_indicator;
     gboolean         autoload;
     gboolean         old_pkgrel;
     recomm_t         recomm[NB_REASONS];

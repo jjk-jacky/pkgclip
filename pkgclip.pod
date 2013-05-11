@@ -130,10 +130,6 @@ foobar-1.3-3 being installed, this option will have foobar-1.3-2 marked for
 removal while keeping foobar-1.2-4; while without it it would be the other
 way around (assuming you keep one older version).
 
-=item I<Use sane sort indicator>
-
-Makes it so that when sort descendingly, the arrow points down... as it should.
-
 =item I<Do not load packages on start>
 
 By default PkgClip automatically scans your cache directories and loads packages

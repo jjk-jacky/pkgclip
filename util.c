@@ -257,8 +257,6 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
         {
             if (strcmp (key, "PacmanConf") == 0)
                 setstringoption (value, &(pkgclip->pacmanconf));
-            else if (strcmp (key, "SaneSortIndicator") == 0)
-                pkgclip->sane_sort_indicator = TRUE;
             else if (strcmp (key, "NoAutoload") == 0)
                 pkgclip->autoload = FALSE;
             else if (strcmp (key, "PkgrelNoSpecial") == 0)
@@ -590,7 +588,6 @@ new_pkgclip (void)
     pkgclip_t *pkgclip = calloc (1, sizeof (*pkgclip));
 
     /* set some defaults */
-    pkgclip->sane_sort_indicator = FALSE;
     pkgclip->autoload = TRUE;
     pkgclip->old_pkgrel = TRUE;
     pkgclip->recomm[REASON_NEWER_THAN_INSTALLED]    = RECOMM_KEEP;
@@ -643,10 +640,6 @@ save_config (pkgclip_t *pkgclip)
         if (EOF == fputs (buf, fp))
             goto err_save;
     }
-
-    if (pkgclip->sane_sort_indicator)
-        if (EOF == fputs ("SaneSortIndicator\n", fp))
-            goto err_save;
 
     if (!pkgclip->autoload)
         if (EOF == fputs ("NoAutoload\n", fp))
