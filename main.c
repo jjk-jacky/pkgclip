@@ -42,6 +42,8 @@
     p = NULL;                                                   \
 } while(0)
 
+static gboolean post_reload_list (pkgclip_t *pkgclip);
+
 static const char *recomm_label[] = {
     "Keep",
     "Remove"
@@ -145,7 +147,7 @@ init_alpm (pkgclip_t *pkgclip)
     pkgclip->handle = alpm_initialize(pkgclip->rootpath, pkgclip->dbpath, &err);
     if (!pkgclip->handle)
     {
-        show_error ("Failed to initialize alpm library", alpm_strerror (err),
+        show_error ("Failed to initialize ALPM library", alpm_strerror (err),
                 pkgclip);
         return -1;
     }
@@ -373,22 +375,28 @@ refresh_list (gboolean from_reloading, pkgclip_t *pkgclip)
         g_signal_handler_unblock (pkgclip->list, pkgclip->handler_pkg_info);
 }
 
-static int
-reload_list (pkgclip_t *pkgclip)
+struct _err
+{
+    pkgclip_t *pkgclip;
+    const gchar *cachedir;
+};
+
+static gboolean
+thread_show_error (struct _err *err)
 {
     char buf[255];
-    int ret = 0;
+    snprintf (buf, 255, "Could not access cache directory %s", err->cachedir);
+    show_error (buf, "Other cache directories (if any) will still be processed.",
+            err->pkgclip);
+    g_free (err);
+    return FALSE;
+}
+
+static void
+thread_reload_list (pkgclip_t *pkgclip)
+{
     alpm_list_t *cachedirs = alpm_option_get_cachedirs (pkgclip->handle);
     alpm_list_t *i;
-
-    if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
-    {
-        g_signal_handler_block (pkgclip->list, pkgclip->handler_pkg_info);
-        gtk_label_set_text (GTK_LABEL (pkgclip->lbl_pkg_info), NULL);
-    }
-    clear_packages (TRUE, pkgclip);
-    set_locked (TRUE, pkgclip);
-    pkgclip->is_loading = TRUE;
 
     for (i = cachedirs; i; i = alpm_list_next (i))
     {
@@ -398,9 +406,11 @@ reload_list (pkgclip_t *pkgclip)
 
         if (dir == NULL)
         {
-            snprintf (buf, 255, "Could not access cache directory %s", cachedir);
-            show_error (buf, "Other cache directories (if any) will still be processed.", pkgclip);
-            ++ret;
+            struct _err *err;
+            err = g_new (struct _err, 1);
+            err->pkgclip = pkgclip;
+            err->cachedir = cachedir;
+            g_idle_add ((GSourceFunc) thread_show_error, err);
             continue;
         }
 
@@ -442,14 +452,6 @@ reload_list (pkgclip_t *pkgclip)
                 pkgclip->total_size += filesize;
             }
 
-            /* label */
-            if (!pkgclip->abort && pkgclip->total_packages % 10 == 0)
-            {
-                snprintf (buf, 255, "Loading packages (%d); Please wait...",
-                        pkgclip->total_packages);
-                gtk_label_set_text (GTK_LABEL (pkgclip->label), buf);
-            }
-
             /* new pc_pkg */
             pc_pkg_t *pc_pkg;
             pc_pkg = calloc (1, sizeof (*pc_pkg));
@@ -465,24 +467,75 @@ reload_list (pkgclip_t *pkgclip)
             if (pkgclip->abort)
             {
                 closedir (dir);
-                if (pkgclip->in_gtk_main)
-                    gtk_main_quit ();
-                return -1;
+                goto done;
             }
-            else
-                gtk_main_iteration_do (FALSE);
         }
         closedir (dir);
     }
+done:
+    g_idle_add ((GSourceFunc) post_reload_list, pkgclip);
+}
+
+static gboolean
+post_reload_list (pkgclip_t *pkgclip)
+{
+    if (pkgclip->abort)
+        gtk_main_quit ();
 
     refresh_list (TRUE, pkgclip);
 
     if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
         g_signal_handler_unblock (pkgclip->list, pkgclip->handler_pkg_info);
+
     pkgclip->is_loading = FALSE;
     set_locked (FALSE, pkgclip);
     update_label (pkgclip);
-    return ret;
+    return FALSE;
+}
+
+static gboolean
+refresh_label (pkgclip_t *pkgclip)
+{
+    if (!pkgclip->abort && pkgclip->is_loading)
+    {
+        gchar buf[255];
+        snprintf (buf, 255, "Loading packages (%d); Please wait...",
+                pkgclip->total_packages);
+        gtk_label_set_text (GTK_LABEL (pkgclip->label), buf);
+    }
+    return pkgclip->is_loading;
+}
+
+static void
+reload_list (pkgclip_t *pkgclip)
+{
+    if (pkgclip->show_pkg_info && pkgclip->handler_pkg_info)
+    {
+        g_signal_handler_block (pkgclip->list, pkgclip->handler_pkg_info);
+        gtk_label_set_text (GTK_LABEL (pkgclip->lbl_pkg_info), NULL);
+    }
+    clear_packages (TRUE, pkgclip);
+    set_locked (TRUE, pkgclip);
+    pkgclip->is_loading = TRUE;
+
+    g_timeout_add (230, (GSourceFunc) refresh_label, pkgclip);
+
+    g_thread_unref (g_thread_new ("reload-list",
+                (GThreadFunc) thread_reload_list, pkgclip));
+}
+
+static gboolean
+window_delete_event_cb (GtkWidget *window _UNUSED_, GdkEvent *event _UNUSED_,
+                        pkgclip_t *pkgclip)
+{
+    if (pkgclip->is_loading)
+    {
+        quit (pkgclip);
+        /* block closing window */
+        return TRUE;
+    }
+    else
+        return FALSE;
 }
 
 static void
@@ -2616,9 +2669,10 @@ main (int argc, char *argv[])
     gtk_widget_show (button);
 
     /* signals */
+    g_signal_connect (G_OBJECT (window), "delete-event",
+            G_CALLBACK (window_delete_event_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (window), "destroy",
             G_CALLBACK (window_destroy_cb), (gpointer) pkgclip);
-
 
     /* show */
     gtk_widget_show_now (window);
@@ -2643,7 +2697,7 @@ main (int argc, char *argv[])
 
     /* free alpm */
     if (pkgclip->handle && alpm_release (pkgclip->handle) == -1)
-        show_error ("Error releasing alpm library", NULL, pkgclip);
+        g_warning ("Failed to properly release ALPM library");
 
     free_pkgclip (pkgclip);
     return 0;

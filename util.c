@@ -415,8 +415,9 @@ show_error (const gchar *message, const gchar *submessage, pkgclip_t *pkgclip)
     gtk_window_set_skip_taskbar_hint (GTK_WINDOW(dialog), TRUE);
     gtk_window_set_skip_pager_hint (GTK_WINDOW(dialog), TRUE);
 
-    gtk_dialog_run (GTK_DIALOG(dialog));
-    gtk_widget_destroy (dialog);
+    g_signal_connect_swapped (dialog, "response",
+            G_CALLBACK (gtk_widget_destroy), dialog);
+    gtk_widget_show_all (dialog);
 }
 
 static void
