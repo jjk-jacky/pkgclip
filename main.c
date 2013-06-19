@@ -520,6 +520,25 @@ reload_list (pkgclip_t *pkgclip)
 
     g_timeout_add (230, (GSourceFunc) refresh_label, pkgclip);
 
+    /* let's reset ALPM in case there was a DB update */
+    if (pkgclip->handle)
+        alpm_release (pkgclip->handle);
+    pkgclip->handle = NULL;
+    if (NULL != pkgclip->dbpath)
+    {
+        free (pkgclip->dbpath);
+        pkgclip->dbpath = NULL;
+    }
+    if (NULL != pkgclip->rootpath)
+    {
+        free (pkgclip->rootpath);
+        pkgclip->rootpath = NULL;
+    }
+    if (NULL != pkgclip->cachedirs)
+        FREELIST (pkgclip->cachedirs);
+    parse_pacmanconf (pkgclip);
+    init_alpm (pkgclip);
+
     g_thread_unref (g_thread_new ("reload-list",
                 (GThreadFunc) thread_reload_list, pkgclip));
 }
@@ -1589,30 +1608,7 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
 
     /* reload/refresh */
     if (needs_reload)
-    {
-        /* well, we need to re-set alpm, so let's clear everything */
-        if (pkgclip->handle)
-            alpm_release (pkgclip->handle);
-        pkgclip->handle = NULL;
-        if (NULL != pkgclip->dbpath)
-        {
-            free (pkgclip->dbpath);
-            pkgclip->dbpath = NULL;
-        }
-        if (NULL != pkgclip->rootpath)
-        {
-            free (pkgclip->rootpath);
-            pkgclip->rootpath = NULL;
-        }
-        if (NULL != pkgclip->cachedirs)
-            FREELIST (pkgclip->cachedirs);
-        /* now let's parse the new pacman.conf */
-        parse_pacmanconf (pkgclip);
-        /* re-init alpm */
-        init_alpm (pkgclip);
-        /* and then reload */
         reload_list (pkgclip);
-    }
     else if (needs_refresh)
         refresh_list (FALSE, pkgclip);
 
