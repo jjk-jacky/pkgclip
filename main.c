@@ -2,7 +2,7 @@
  * PkgClip - Copyright (C) 2012-2013 Olivier Brunel
  *
  * main.c
- * Copyright (C) 2012 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2013 Olivier Brunel <i.am.jack.mail@gmail.com>
  *
  * This file is part of PkgClip.
  *
@@ -895,6 +895,7 @@ show_results (guint processed _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_destroy (dialog);
 
     /* free */
+    free (pkgclip->progress_win->error_messages);
     free (pkgclip->progress_win);
     pkgclip->progress_win = NULL;
 }
@@ -1008,6 +1009,10 @@ dbus_method_cb (GObject *source _UNUSED_, GAsyncResult *result, pkgclip_t *pkgcl
     {
         show_error ("Unable to remove packages", error->message, pkgclip);
         g_error_free (error);
+        /* free */
+        free (pkgclip->progress_win->error_messages);
+        free (pkgclip->progress_win);
+        pkgclip->progress_win = NULL;
         return;
     }
 
@@ -2087,7 +2092,7 @@ main (int argc, char *argv[])
         else if (strcmp (argv[1], "-V") == 0 || strcmp (argv[1], "--version") == 0)
         {
             printf ("PkgClip - " PACKAGE_TAG " v" PACKAGE_VERSION "\n");
-            printf ("Copyright (C) 2012 Olivier Brunel\n");
+            printf ("Copyright (C) 2012-2013 Olivier Brunel\n");
             printf ("License GPLv3+: GNU GPL version 3 or later"
                     " <http://gnu.org/licenses/gpl.html>\n");
             printf ("This is free software: you are free to change and redistribute it.\n");
