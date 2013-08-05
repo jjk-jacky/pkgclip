@@ -2,7 +2,7 @@
  * PkgClip - Copyright (C) 2012 Olivier Brunel
  *
  * pkgclip.h
- * Copyright (C) 2012 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2013 Olivier Brunel <i.am.jack.mail@gmail.com>
  * 
  * This file is part of PkgClip.
  *
@@ -88,11 +88,10 @@ typedef struct _progress_win_t {
     GtkWidget   *label;
     GtkWidget   *pbar;
 
-    unsigned int total_packages;
-    off_t        total_size;
-    unsigned int success_packages;
+    unsigned int total_files;
+    unsigned int success_files;
     off_t        success_size;
-    unsigned int error_packages;
+    unsigned int error_files;
     off_t        error_size;
 
     char        *error_messages;
@@ -108,6 +107,7 @@ typedef struct _prefs_win_t {
     GtkWidget    *chk_autoload;
     GtkWidget    *chk_show_pkg_info;
     GtkWidget    *entry_pkg_info;
+    GtkWidget    *chk_remove_sig;
     GtkTreeView  *tree_ai;
     GtkTreeModel *model_ai;
     gboolean      ai_updated;
@@ -141,6 +141,7 @@ typedef struct _pkgclip_t {
     gboolean         show_pkg_info;
     char            *pkg_info;
     alpm_list_t     *pkg_info_extras;
+    gboolean         remove_sig;
 
     /* app/gui */
     gboolean         in_gtk_main;

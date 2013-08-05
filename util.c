@@ -2,7 +2,7 @@
  * PkgClip - Copyright (C) 2012-2013 Olivier Brunel
  *
  * util.c
- * Copyright (C) 2012 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2013 Olivier Brunel <i.am.jack.mail@gmail.com>
  * Copyright (c) 2006-2011 Pacman Development Team <pacman-dev@archlinux.org>
  *
  * This file is part of PkgClip.
@@ -305,6 +305,8 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
                 pkgclip->show_pkg_info = FALSE;
             else if (strcmp (key, "PkgInfo") == 0)
                 setstringoption (value, &(pkgclip->pkg_info));
+            else if (strcmp (key, "NoRemoveSig") == 0)
+                pkgclip->remove_sig = FALSE;
         }
     }
 
@@ -602,6 +604,7 @@ new_pkgclip (void)
     pkgclip->nb_old_ver_ai = 0;
     pkgclip->show_pkg_info = TRUE;
     pkgclip->pkg_info = strdup (PKG_INFO_TPL);
+    pkgclip->remove_sig = TRUE;
 
     /* parse config file, if any */
     char file[PATH_MAX];
@@ -666,6 +669,10 @@ save_config (pkgclip_t *pkgclip)
 
     if (!pkgclip->show_pkg_info)
         if (EOF == fputs ("HidePkgInfo\n", fp))
+            goto err_save;
+
+    if (!pkgclip->remove_sig)
+        if (EOF == fputs ("NoRemoveSig\n", fp))
             goto err_save;
 
     s = get_tpl_pkg_info (pkgclip);

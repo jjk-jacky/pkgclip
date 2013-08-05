@@ -775,7 +775,7 @@ list_cursor_changed_cb (GtkTreeView *tree, pkgclip_t *pkgclip)
 }
 
 static void
-show_progress_window (pkgclip_t *pkgclip)
+load_progress_window (pkgclip_t *pkgclip)
 {
     progress_win_t *progress_win;
     progress_win = calloc (1, sizeof (*(pkgclip->progress_win)));
@@ -816,7 +816,6 @@ show_progress_window (pkgclip_t *pkgclip)
     gtk_widget_show (pbar);
 
     /* done */
-    gtk_widget_show (window);
     pkgclip->progress_win = progress_win;
 }
 
@@ -831,13 +830,13 @@ show_results (guint processed _UNUSED_, pkgclip_t *pkgclip)
     const char *success_unit;
     success_size = humanize_size (pkgclip->progress_win->success_size, '\0', &success_unit);
 
-    if (pkgclip->progress_win->error_packages == 0)
+    if (pkgclip->progress_win->error_files == 0)
     {
         /* no errors */
         type = GTK_MESSAGE_INFO;
         title = "Packages removed!";
-        snprintf (subtitle, 1024, "%d packages have been removed (%.2f %s).",
-                pkgclip->progress_win->success_packages, success_size, success_unit);
+        snprintf (subtitle, 1024, "%d files have been removed (%.2f %s).",
+                pkgclip->progress_win->success_files, success_size, success_unit);
     }
     else
     {
@@ -848,10 +847,10 @@ show_results (guint processed _UNUSED_, pkgclip_t *pkgclip)
 
         type = GTK_MESSAGE_WARNING;
         title = "Packages removed! Some errors occurred.";
-        snprintf (subtitle, 1024, "%d packages have been removed (%.2f %s); "
-                "%d packages could not be removed (%.2f %s).",
-                pkgclip->progress_win->success_packages, success_size, success_unit,
-                pkgclip->progress_win->error_packages, error_size, error_unit);
+        snprintf (subtitle, 1024, "%d files have been removed (%.2f %s); "
+                "%d files could not be removed (%.2f %s).",
+                pkgclip->progress_win->success_files, success_size, success_unit,
+                pkgclip->progress_win->error_files, error_size, error_unit);
     }
 
     /* the window */
@@ -867,7 +866,7 @@ show_results (guint processed _UNUSED_, pkgclip_t *pkgclip)
     gtk_window_set_decorated (GTK_WINDOW (dialog), FALSE);
 
     /* details */
-    if (pkgclip->progress_win->error_packages > 0)
+    if (pkgclip->progress_win->error_files > 0)
     {
         GtkWidget *vbox;
         vbox = gtk_message_dialog_get_message_area (GTK_MESSAGE_DIALOG (dialog));
@@ -914,13 +913,13 @@ on_signal (GDBusProxy *proxy _UNUSED_,
     if (g_strcmp0 (signal_name, "RemoveSuccess") == 0)
     {
         is_success = TRUE;
-        ++(pkgclip->progress_win->success_packages);
+        ++(pkgclip->progress_win->success_files);
         g_variant_get (parameters, "(s)", &pkg_name);
     }
     else if (g_strcmp0 (signal_name, "RemoveFailure") == 0)
     {
         is_success = FALSE;
-        ++(pkgclip->progress_win->error_packages);
+        ++(pkgclip->progress_win->error_files);
         g_variant_get (parameters, "(ss)", &pkg_name, &error);
 
         gchar buf[1024];
@@ -945,9 +944,9 @@ on_signal (GDBusProxy *proxy _UNUSED_,
         return;
 
     gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (pkgclip->progress_win->pbar),
-            (double) (pkgclip->progress_win->success_packages
-                + pkgclip->progress_win->error_packages)
-            / pkgclip->marked_packages);
+            (double) (pkgclip->progress_win->success_files
+                + pkgclip->progress_win->error_files)
+            / pkgclip->progress_win->total_files);
 
     GtkTreeModel *model = GTK_TREE_MODEL (pkgclip->store);
     GtkTreeIter iter;
@@ -1149,6 +1148,9 @@ btn_remove_cb (gpointer p _UNUSED_, pkgclip_t *pkgclip)
                 (gpointer) pkgclip);
     }
 
+    load_progress_window (pkgclip);
+    pkgclip->progress_win->total_files = 0;
+
     GVariantBuilder *builder;
 
     builder = g_variant_builder_new (G_VARIANT_TYPE ("as"));
@@ -1157,10 +1159,26 @@ btn_remove_cb (gpointer p _UNUSED_, pkgclip_t *pkgclip)
         pc_pkg_t *pc_pkg = i->data;
 
         if (pc_pkg->remove)
+        {
+            char b[255];
+
             g_variant_builder_add (builder, "s", pc_pkg->file);
+            ++pkgclip->progress_win->total_files;
+            if (pkgclip->remove_sig
+                    && snprintf (b, 255, "%s.sig", pc_pkg->file) < 255)
+            {
+                struct stat sb;
+
+                if (stat (b, &sb) == 0)
+                {
+                    g_variant_builder_add (builder, "s", b);
+                    ++pkgclip->progress_win->total_files;
+                }
+            }
+        }
     }
 
-    show_progress_window (pkgclip);
+    gtk_widget_show (pkgclip->progress_win->window);
 
     g_dbus_proxy_call (pkgclip->proxy,
             "RemovePackages",
@@ -1570,6 +1588,15 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
             }
         }
 
+        is_on = gtk_toggle_button_get_active (
+                GTK_TOGGLE_BUTTON (pkgclip->prefs->chk_remove_sig));
+        if (is_on != pkgclip->remove_sig)
+        {
+            pkgclip->remove_sig = is_on;
+            needs_save = TRUE;
+        }
+
+
         if (pkgclip->prefs->ai_updated)
         {
             FREELIST (pkgclip->as_installed);
@@ -1598,6 +1625,7 @@ prefs_btn_ok_cb (GtkButton *button, pkgclip_t *pkgclip)
         pkgclip->autoload = TRUE;
         FREELIST (pkgclip->as_installed);
         pkgclip->nb_old_ver_ai = 0;
+        pkgclip->remove_sig = TRUE;
 
         pkgclip->recomm[REASON_NEWER_THAN_INSTALLED]    = RECOMM_KEEP;
         pkgclip->recomm[REASON_INSTALLED]               = RECOMM_KEEP;
@@ -1840,6 +1868,15 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
             "\n\n\t<i>(Leave empty to restore default value.)</i>"
             );
     gtk_widget_show (entry);
+
+    /* remove .sig */
+    check = gtk_check_button_new_with_label ("Remove matching .sig files");
+    pkgclip->prefs->chk_remove_sig = check;
+    gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
+    gtk_widget_set_margin_left (check, 23);
+    gtk_widget_set_tooltip_markup (check, "Remove matching signature files (pkgfile.sig)");
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->remove_sig);
+    gtk_widget_show (check);
 
     /* ** As Installed ** */
     GtkWidget *expander;
