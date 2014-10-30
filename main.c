@@ -1069,13 +1069,17 @@ select_prev_next_marked (gboolean next, pkgclip_t *pkgclip)
             path = gtk_tree_model_get_path (model, &iter);
             gtk_tree_selection_unselect_all (selection);
             gtk_tree_selection_select_path (selection, path);
-            gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (pkgclip->list),
-                    path, NULL, TRUE, 0.5, 0.0);
-
 
             /* set cursor/focus as well, so the package info get refreshed
              * (via list_cursor_changed_cb) */
             gtk_tree_view_set_cursor (tree, path, NULL, FALSE);
+
+            /* do the scrolling *after* the call to set_cursor(), because since
+             * GTK+3.14 now set_cursor() will overwrite our move and put the row
+             * to a different place (i.e. doing minimum scrolling instead of
+             * centering it as we asked) */
+            gtk_tree_view_scroll_to_cell (GTK_TREE_VIEW (pkgclip->list),
+                    path, NULL, TRUE, 0.5, 0.0);
 
             gtk_tree_path_free (path);
             goto clean;
