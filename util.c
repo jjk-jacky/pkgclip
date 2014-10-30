@@ -361,19 +361,19 @@ confirm (const gchar *message,
 
     button = gtk_dialog_add_button(
             GTK_DIALOG(dialog),
-            (NULL == btn_no_label) ? GTK_STOCK_NO : btn_no_label,
+            (NULL == btn_no_label) ? "No" : btn_no_label,
             GTK_RESPONSE_NO);
-    image = gtk_image_new_from_stock (
-            (NULL == btn_no_image) ? GTK_STOCK_NO : btn_no_image,
+    image = gtk_image_new_from_icon_name (
+            (NULL == btn_no_image) ? "gtk-no" : btn_no_image,
             GTK_ICON_SIZE_MENU);
     gtk_button_set_image( GTK_BUTTON(button), image);
 
     button = gtk_dialog_add_button(
             GTK_DIALOG(dialog),
-            (NULL == btn_yes_label) ? GTK_STOCK_YES : btn_yes_label,
+            (NULL == btn_yes_label) ? "Yes" : btn_yes_label,
             GTK_RESPONSE_YES);
-    image = gtk_image_new_from_stock (
-            (NULL == btn_yes_image) ? GTK_STOCK_YES : btn_yes_image,
+    image = gtk_image_new_from_icon_name (
+            (NULL == btn_yes_image) ? "gtk-yes" : btn_yes_image,
             GTK_ICON_SIZE_MENU);
     gtk_button_set_image( GTK_BUTTON(button), image);
 

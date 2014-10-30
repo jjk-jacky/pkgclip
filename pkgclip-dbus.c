@@ -186,8 +186,6 @@ main (int argc _UNUSED_, char *argv[] _UNUSED_)
 {
   guint owner_id;
 
-  g_type_init ();
-
   /* We are lazy here - we don't want to manually provide
    * the introspection data structures - so we just build
    * them from XML.

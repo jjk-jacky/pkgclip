@@ -792,7 +792,6 @@ load_progress_window (pkgclip_t *pkgclip)
     gtk_container_set_border_width (GTK_CONTAINER (window), 5);
     gtk_window_set_skip_taskbar_hint (GTK_WINDOW(window), TRUE);
     gtk_window_set_skip_pager_hint (GTK_WINDOW(window), TRUE);
-    gtk_window_set_has_resize_grip (GTK_WINDOW (window), FALSE);
     gtk_widget_set_size_request (window, 420, -1);
 
     /* everything in a vbox */
@@ -1119,7 +1118,7 @@ btn_remove_cb (gpointer p _UNUSED_, pkgclip_t *pkgclip)
             pkgclip->marked_packages, size, unit);
     if (!confirm ("Are you sure you want to remove all marked packages ?",
                 buf,
-                "Remove packages", GTK_STOCK_DELETE,
+                "Remove packages", "edit-delete",
                 NULL, NULL,
                 pkgclip))
         return;
@@ -1831,7 +1830,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     check = gtk_check_button_new_with_label ("Remove older package releases");
     pkgclip->prefs->chk_old_pkgrel = check;
     gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
-    gtk_widget_set_margin_left (check, 23);
+    gtk_widget_set_margin_start (check, 23);
     gtk_widget_set_tooltip_markup (check, "Remove packages for the same version but an older package release <small>(MAJOR.MINOR.REVISION-<b>PKGREL</b>)</small>.");
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->old_pkgrel);
     gtk_widget_show (check);
@@ -1840,7 +1839,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     check = gtk_check_button_new_with_label ("Do not load packages on start");
     pkgclip->prefs->chk_autoload = check;
     gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
-    gtk_widget_set_margin_left (check, 23);
+    gtk_widget_set_margin_start (check, 23);
     gtk_widget_set_tooltip_text (check, "You will have to manually load packages (using menu \"Reload packages\")");
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), !pkgclip->autoload);
     gtk_widget_show (check);
@@ -1849,7 +1848,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     check = gtk_check_button_new_with_label ("Show package information. \t Template:");
     pkgclip->prefs->chk_show_pkg_info = check;
     gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
-    gtk_widget_set_margin_left (check, 23);
+    gtk_widget_set_margin_start (check, 23);
     gtk_widget_set_tooltip_text (check, "Show package information panel at the bottom");
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->show_pkg_info);
     gtk_widget_show (check);
@@ -1877,7 +1876,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     check = gtk_check_button_new_with_label ("Remove matching .sig files");
     pkgclip->prefs->chk_remove_sig = check;
     gtk_grid_attach (GTK_GRID (grid), check, 0, top++, 2, 1);
-    gtk_widget_set_margin_left (check, 23);
+    gtk_widget_set_margin_start (check, 23);
     gtk_widget_set_tooltip_markup (check, "Remove matching signature files (pkgfile.sig)");
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check), pkgclip->remove_sig);
     gtk_widget_show (check);
@@ -1920,7 +1919,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_show (vbox_tb);
 
     /* button Add */
-    image = gtk_image_new_from_stock (GTK_STOCK_ADD, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("list-add", GTK_ICON_SIZE_MENU);
     button = gtk_button_new ();
     gtk_button_set_image (GTK_BUTTON (button), image);
     gtk_widget_set_tooltip_text (button, "Add a new package to the list");
@@ -1929,7 +1928,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
             G_CALLBACK (prefs_btn_list_add_cb), (gpointer) pkgclip);
     gtk_widget_show (button);
     /* button Edit */
-    image = gtk_image_new_from_stock (GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("gtk-edit", GTK_ICON_SIZE_MENU);
     button = gtk_button_new ();
     gtk_button_set_image (GTK_BUTTON (button), image);
     gtk_widget_set_tooltip_text (button, "Edit selected package");
@@ -1938,7 +1937,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
             G_CALLBACK (prefs_btn_list_edit_cb), (gpointer) pkgclip);
     gtk_widget_show (button);
     /* button Remove */
-    image = gtk_image_new_from_stock (GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("list-remove", GTK_ICON_SIZE_MENU);
     button = gtk_button_new ();
     gtk_button_set_image (GTK_BUTTON (button), image);
     gtk_widget_set_tooltip_text (button, "Remove selected package from the list");
@@ -2023,7 +2022,7 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_show (hbox);
 
     /* button Clean */
-    image = gtk_image_new_from_stock (GTK_STOCK_CLEAR, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("edit-clear", GTK_ICON_SIZE_MENU);
     button = gtk_button_new_with_label ("Clear Saved Preferences");
     gtk_button_set_image (GTK_BUTTON (button), image);
     gtk_widget_set_tooltip_text (button, "Remove PkgClip's configuration file");
@@ -2034,7 +2033,9 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_show (button);
 
     /* button OK */
-    button = gtk_button_new_from_stock (GTK_STOCK_OK);
+    image = gtk_image_new_from_icon_name ("gtk-ok", GTK_ICON_SIZE_MENU);
+    button = gtk_button_new_with_label ("OK");
+    gtk_button_set_image (GTK_BUTTON (button), image);
     g_object_set_data (G_OBJECT (button), "btn-id", (gpointer) 1);
     g_signal_connect (G_OBJECT (button), "clicked",
             G_CALLBACK (prefs_btn_ok_cb), (gpointer) pkgclip);
@@ -2042,7 +2043,9 @@ menu_preferences_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_widget_show (button);
 
     /* button Cancel */
-    button = gtk_button_new_from_stock (GTK_STOCK_CANCEL);
+    image = gtk_image_new_from_icon_name ("gtk-cancel", GTK_ICON_SIZE_MENU);
+    button = gtk_button_new_with_label ("Cancel");
+    gtk_button_set_image (GTK_BUTTON (button), image);
     g_signal_connect_swapped (G_OBJECT (button), "clicked",
             G_CALLBACK (gtk_widget_destroy), (gpointer) window);
     gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 2);
@@ -2155,7 +2158,6 @@ main (int argc, char *argv[])
     pkgclip->window = window;
     gtk_window_set_title (GTK_WINDOW (window), "PkgClip v" PACKAGE_VERSION);
     gtk_container_set_border_width (GTK_CONTAINER (window), 0);
-    gtk_window_set_has_resize_grip (GTK_WINDOW (window), FALSE);
     gtk_window_set_default_size (GTK_WINDOW (window), 800, 600);
     /* icon */
     GdkPixbuf *pixbuf;
@@ -2201,11 +2203,15 @@ main (int argc, char *argv[])
     menu = gtk_menu_new ();
     gtk_menu_set_accel_group (GTK_MENU (menu), accel_group);
     /* reload pkgs */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Reload packages from cache");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     pkgclip->mnu_reload = menuitem;
     gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/Reload");
-    image = gtk_image_new_from_stock (GTK_STOCK_REFRESH, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("view-refresh", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_reload_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2219,10 +2225,14 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* select prev */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Select previous marked package");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/SelectPrev");
-    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("media-skip-backward", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (btn_prev_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2232,10 +2242,14 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* select next */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Select next marked package");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/SelectNext");
-    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_NEXT, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("media-skip-forward", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (btn_next_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2249,12 +2263,16 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* remove */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Removed marked packages...");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     pkgclip->mnu_remove = menuitem;
     gtk_widget_set_sensitive (menuitem, FALSE);
     gtk_menu_item_set_accel_path (GTK_MENU_ITEM (menuitem), "<PkgClip>/PkgClip/Remove");
-    image = gtk_image_new_from_stock (GTK_STOCK_DELETE, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("edit-delete", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (btn_remove_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2268,7 +2286,13 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* quit */
-    menuitem = gtk_image_menu_item_new_from_stock (GTK_STOCK_QUIT, NULL);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    menuitem = gtk_image_menu_item_new_with_label ("Quit");
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    image = gtk_image_new_from_icon_name ("application-exit", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_exit_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2287,7 +2311,13 @@ main (int argc, char *argv[])
     menu = gtk_menu_new ();
     pkgclip->mnu_edit = menu;
     /* select all */
-    menuitem = gtk_image_menu_item_new_from_stock (GTK_STOCK_SELECT_ALL, NULL);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    menuitem = gtk_image_menu_item_new_with_label ("Select All");
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    image = gtk_image_new_from_icon_name ("edit-select-all", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_select_all_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2297,7 +2327,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* unselect all */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Unselect all");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_unselect_all_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2311,7 +2343,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* select all... */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Mark all...");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "select",
             G_CALLBACK (menu_select_cb), (gpointer) "Mark all packages with a given reason");
     g_signal_connect (G_OBJECT (menuitem), "deselect",
@@ -2335,7 +2369,9 @@ main (int argc, char *argv[])
         snprintf (buf2, 100, "Mark all packages \"%s\"", buf);
         mnu_reasons_desc_select[i] = strdup (buf2);
         /* menuitem */
+        G_GNUC_BEGIN_IGNORE_DEPRECATIONS
         submenuitem = gtk_image_menu_item_new_with_label (buf);
+        G_GNUC_END_IGNORE_DEPRECATIONS
         g_object_set_data (G_OBJECT (submenuitem), "reason", GINT_TO_POINTER (i));
         g_signal_connect (G_OBJECT (submenuitem), "activate",
                 G_CALLBACK (menu_select_all_reason_cb), (gpointer) pkgclip);
@@ -2349,7 +2385,9 @@ main (int argc, char *argv[])
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem), submenu);
     gtk_widget_show (submenu);
     /* unselect all... */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Unmark all...");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "select",
             G_CALLBACK (menu_select_cb), (gpointer) "Unmark all packages with a given reason");
     g_signal_connect (G_OBJECT (menuitem), "deselect",
@@ -2373,7 +2411,9 @@ main (int argc, char *argv[])
         snprintf (buf2, 100, "Unmark all packages \"%s\"", buf);
         mnu_reasons_desc_unselect[i] = strdup (buf2);
         /* menuitem */
+        G_GNUC_BEGIN_IGNORE_DEPRECATIONS
         submenuitem = gtk_image_menu_item_new_with_label (buf);
+        G_GNUC_END_IGNORE_DEPRECATIONS
         g_object_set_data (G_OBJECT (submenuitem), "reason", GINT_TO_POINTER (i));
         g_signal_connect (G_OBJECT (submenuitem), "activate",
                 G_CALLBACK (menu_unselect_all_reason_cb), (gpointer) pkgclip);
@@ -2391,7 +2431,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* mark selection */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Mark Selection");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_mark_selection_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2401,7 +2443,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* unmark selection */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Unmark Selection");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_unmark_selection_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2415,7 +2459,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* add selection to list */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Add Selection to As Installed list");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_add_as_installed_selection_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2425,7 +2471,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* remove selection from list */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Remove Selection from As Installed list");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_remove_as_installed_selection_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2439,7 +2487,9 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* restore recommendations */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     menuitem = gtk_image_menu_item_new_with_label ("Restore recommendations");
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_restore_recomm_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2453,7 +2503,13 @@ main (int argc, char *argv[])
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
     /* preferences */
-    menuitem = gtk_image_menu_item_new_from_stock (GTK_STOCK_PREFERENCES, NULL);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    menuitem = gtk_image_menu_item_new_with_label ("Preferences");
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    image = gtk_image_new_from_icon_name ("preferences-desktop", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_preferences_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2471,7 +2527,13 @@ main (int argc, char *argv[])
     /* menu "Help" */
     menu = gtk_menu_new ();
     /* help */
-    menuitem = gtk_image_menu_item_new_from_stock (GTK_STOCK_HELP, NULL);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    menuitem = gtk_image_menu_item_new_with_label ("Help");
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    image = gtk_image_new_from_icon_name ("help-contents", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_help_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2484,7 +2546,13 @@ main (int argc, char *argv[])
     menuitem = gtk_separator_menu_item_new ();
     gtk_container_add (GTK_CONTAINER (menu), menuitem);
     gtk_widget_show (menuitem);
-    menuitem = gtk_image_menu_item_new_from_stock (GTK_STOCK_ABOUT, NULL);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    menuitem = gtk_image_menu_item_new_with_label ("About");
+    G_GNUC_END_IGNORE_DEPRECATIONS
+    image = gtk_image_new_from_icon_name ("help-about", GTK_ICON_SIZE_MENU);
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (menuitem), image);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     g_signal_connect (G_OBJECT (menuitem), "activate",
             G_CALLBACK (menu_about_cb), (gpointer) pkgclip);
     g_signal_connect (G_OBJECT (menuitem), "select",
@@ -2528,7 +2596,9 @@ main (int argc, char *argv[])
     selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (list));
     gtk_tree_selection_set_mode (selection, GTK_SELECTION_MULTIPLE);
     /* hint for alternate row colors */
+    G_GNUC_BEGIN_IGNORE_DEPRECATIONS
     gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (list), TRUE);
+    G_GNUC_END_IGNORE_DEPRECATIONS
     /* for right-click */
     gtk_widget_add_events (list, GDK_BUTTON_RELEASE_MASK);
     g_signal_connect (G_OBJECT (list), "button-press-event",
@@ -2641,7 +2711,8 @@ main (int argc, char *argv[])
     label = gtk_label_new (NULL);
     pkgclip->lbl_pkg_info = label;
     g_object_set (label, "margin", 3, NULL);
-    gtk_misc_set_alignment (GTK_MISC (label), 0, 0.5);
+    gtk_widget_set_halign (label, GTK_ALIGN_START);
+    gtk_widget_set_valign (label, GTK_ALIGN_CENTER);
     gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
     if (pkgclip->show_pkg_info)
         gtk_widget_show (label);
@@ -2667,7 +2738,7 @@ main (int argc, char *argv[])
     GtkWidget *button;
 
     /* button: Remove marked packages */
-    image = gtk_image_new_from_stock (GTK_STOCK_DELETE, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("edit-delete", GTK_ICON_SIZE_MENU);
     button = gtk_button_new_with_label ("Remove marked packages...");
     pkgclip->button = button;
     gtk_button_set_image (GTK_BUTTON (button), image);
@@ -2683,7 +2754,7 @@ main (int argc, char *argv[])
     gtk_widget_show (button);
 
     /* button: Select next marked package */
-    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_NEXT, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("media-skip-forward", GTK_ICON_SIZE_MENU);
     button = gtk_button_new ();
     gtk_button_set_image (GTK_BUTTON (button), image);
     g_signal_connect (G_OBJECT (button), "clicked",
@@ -2697,7 +2768,7 @@ main (int argc, char *argv[])
     gtk_widget_show (button);
 
     /* button: Select previous marked package */
-    image = gtk_image_new_from_stock (GTK_STOCK_MEDIA_PREVIOUS, GTK_ICON_SIZE_MENU);
+    image = gtk_image_new_from_icon_name ("media-skip-backward", GTK_ICON_SIZE_MENU);
     button = gtk_button_new ();
     gtk_button_set_image (GTK_BUTTON (button), image);
     g_signal_connect (G_OBJECT (button), "clicked",

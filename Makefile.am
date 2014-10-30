@@ -40,7 +40,6 @@ AM_CFLAGS = -g \
                 -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations \
                 -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
                 -Wuninitialized -Wconversion -Wstrict-prototypes
-AM_CFLAGS += -D_BSD_SOURCE
 
 pkgclip_CFLAGS = ${AM_CFLAGS} @GTK_CFLAGS@
 pkgclip_LDADD = @GTK_LIBS@ -lalpm
