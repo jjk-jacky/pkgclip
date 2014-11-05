@@ -263,7 +263,7 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
                 pkgclip->old_pkgrel = FALSE;
             else if (strcmp (key, "NbOldVersion") == 0)
             {
-                char *s;
+                char *s = NULL;
                 setstringoption (value, &s);
                 if (NULL != s)
                 {
@@ -273,7 +273,7 @@ parse_config_file (const char *file, gboolean is_pacman, int depth, pkgclip_t *p
             }
             else if (strcmp (key, "NbOldVersionAsInstalled") == 0)
             {
-                char *s;
+                char *s = NULL;
                 setstringoption (value, &s);
                 if (NULL != s)
                 {
