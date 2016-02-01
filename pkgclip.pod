@@ -260,7 +260,7 @@ L<https://github.com/jjk-jacky/pkgclip>
 
 =over
 
-=item Olivier Brunel <i.am.jack.mail AT gmail DOT com>
+=item Olivier Brunel <jjk AT jjacky DOT com>
 
 =item Pacman Development Team <pacman-dev AT archlinux DOT org>
 

@@ -1,9 +1,9 @@
 /**
- * PkgClip - Copyright (C) 2012 Olivier Brunel
+ * PkgClip - Copyright (C) 2012-2016 Olivier Brunel
  *
  * pkgclip.h
- * Copyright (C) 2012-2013 Olivier Brunel <i.am.jack.mail@gmail.com>
- * 
+ * Copyright (C) 2012-2016 Olivier Brunel <jjk@jjacky.com>
+ *
  * This file is part of PkgClip.
  *
  * PkgClip is free software: you can redistribute it and/or modify it under the

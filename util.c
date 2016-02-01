@@ -1,8 +1,8 @@
 /**
- * PkgClip - Copyright (C) 2012-2013 Olivier Brunel
+ * PkgClip - Copyright (C) 2012-2016 Olivier Brunel
  *
  * util.c
- * Copyright (C) 2012-2013 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2016 Olivier Brunel <jjk@jjacky.com>
  * Copyright (c) 2006-2011 Pacman Development Team <pacman-dev@archlinux.org>
  *
  * This file is part of PkgClip.

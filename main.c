@@ -1,8 +1,8 @@
 /**
- * PkgClip - Copyright (C) 2012-2013 Olivier Brunel
+ * PkgClip - Copyright (C) 2012-2016 Olivier Brunel
  *
  * main.c
- * Copyright (C) 2012-2013 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2016 Olivier Brunel <jjk@jjacky.com>
  *
  * This file is part of PkgClip.
  *
@@ -2088,7 +2088,7 @@ menu_about_cb (GtkMenuItem *menuitem _UNUSED_, pkgclip_t *pkgclip)
     gtk_about_dialog_set_comments (about, PACKAGE_TAG);
     gtk_about_dialog_set_website (about, "http://jjacky.com/pkgclip");
     gtk_about_dialog_set_website_label (about, "http://jjacky.com/pkgclip");
-    gtk_about_dialog_set_copyright (about, "Copyright (C) 2012-2013 Olivier Brunel");
+    gtk_about_dialog_set_copyright (about, "Copyright (C) 2012-2016 Olivier Brunel");
     gtk_about_dialog_set_license_type (about, GTK_LICENSE_GPL_3_0);
     gtk_about_dialog_set_authors (about, authors);
     gtk_about_dialog_set_artists (about, artists);
@@ -2136,7 +2136,7 @@ main (int argc, char *argv[])
         else if (strcmp (argv[1], "-V") == 0 || strcmp (argv[1], "--version") == 0)
         {
             printf ("PkgClip - " PACKAGE_TAG " v" PACKAGE_VERSION "\n");
-            printf ("Copyright (C) 2012-2013 Olivier Brunel\n");
+            printf ("Copyright (C) 2012-2016 Olivier Brunel\n");
             printf ("License GPLv3+: GNU GPL version 3 or later"
                     " <http://gnu.org/licenses/gpl.html>\n");
             printf ("This is free software: you are free to change and redistribute it.\n");

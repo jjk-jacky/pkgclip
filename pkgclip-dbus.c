@@ -1,8 +1,8 @@
 /**
- * PkgClip - Copyright (C) 2012-2013 Olivier Brunel
+ * PkgClip - Copyright (C) 2012-2016 Olivier Brunel
  *
  * pkgclip-dbus.c
- * Copyright (C) 2012 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2016 Olivier Brunel <jjk@jjacky.com>
  *
  * This file is part of PkgClip.
  *

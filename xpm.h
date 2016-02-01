@@ -1,8 +1,8 @@
 /**
- * PkgClip - Copyright (C) 2012 Olivier Brunel
- * 
+ * PkgClip - Copyright (C) 2012-2016 Olivier Brunel
+ *
  * xpm.h
- * Copyright (C) 2012 Olivier Brunel <i.am.jack.mail@gmail.com>
+ * Copyright (C) 2012-2016 Olivier Brunel <jjk@jjacky.com>
  * Original Artwork Copyright (C) 2008 Hylke Bons
  *
  * This file is part of PkgClip.
